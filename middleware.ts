@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'secret');
 
 // Routes that don't require authentication
-const publicRoutes = ['/', '/api/auth/login', '/api/auth/register'];
+const publicRoutes = ['/', '/api/auth/login', '/api/auth/register', '/api/seed'];
 
 // Role-based route access
 const roleRoutes: { [key: string]: string[] } = {
