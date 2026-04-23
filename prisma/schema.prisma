@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  logo          String?
+  address       String?
+  phone         String?
+  email         String?
+  primaryColor  String    @default("#6366f1")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  users         User[]
+  classes       Class[]
+  settings      SchoolSettings?
+  subjects      Subject[]
+}
+
+model SchoolSettings {
+  id            String    @id @default(cuid())
+  schoolId      String    @unique
+  school        School    @relation(fields: [schoolId], references: [id])
+  
+  gradingScale  String    @default("A:70-100,B:50-69,C:0-49")
+  assessmentWeights String @default("test1:15,test2:15,exam:70")
+  academicYear  String    @default("2024/2025")
+  currentTerm   String    @default("First Term")
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("student")
+  schoolId      String
+  school        School    @relation(fields: [schoolId], references: [id])
+  
+  studentId     String?   @unique
+  staffId       String?   @unique
+  
+  avatar        String?
+  phone         String?
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  teacherClasses Class[]  @relation("TeacherClasses")
+  enrollments   Enrollment[]
+  marks         Mark[]
+  sentMessages  Message[]  @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  posts         ForumPost[]
+  comments      ForumComment[]
+  results       Result[]
+  announcements Announcement[]
+  payments      Payment[]
+  classSubjects  ClassSubject[]
+}
+
+model Class {
+  id            String    @id @default(cuid())
+  name          String
+  section       String
+  schoolId      String
+  school        School    @relation(fields: [schoolId], references: [id])
+  teacherId     String?
+  teacher       User?     @relation("TeacherClasses", fields: [teacherId], references: [id])
+  level         Int
+  status        String    @default("active")
+  
+  enrollments   Enrollment[]
+  subjects      ClassSubject[]
+  results       Result[]
+}
+
+model Subject {
+  id            String    @id @default(cuid())
+  name          String
+  code          String
+  schoolId      String
+  school        School    @relation(fields: [schoolId], references: [id])
+  isElective    Boolean   @default(false)
+  
+  classSubjects ClassSubject[]
+}
+
+model ClassSubject {
+  id            String    @id @default(cuid())
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  subjectId     String
+  subject       Subject   @relation(fields: [subjectId], references: [id])
+  teacherId     String
+  teacher       User      @relation(fields: [teacherId], references: [id])
+  
+  marks         Mark[]
+}
+
+model Enrollment {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       User      @relation(fields: [studentId], references: [id])
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  academicYear  String
+  rollNumber    String?
+  
+  @@unique([studentId, classId, academicYear])
+}
+
+model Mark {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       User      @relation(fields: [studentId], references: [id])
+  classSubjectId String
+  classSubject  ClassSubject @relation(fields: [classSubjectId], references: [id])
+  assessmentType String
+  score         Float
+  maxScore      Float     @default(100)
+  grade         String?
+  remarks       String?
+  uploadedBy    String
+  uploadedAt    DateTime  @default(now())
+  approvedBy    String?
+  approvedAt    DateTime?
+  status        String    @default("pending")
+}
+
+model Result {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       User      @relation(fields: [studentId], references: [id])
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  term          String
+  academicYear  String
+  subjectResults String   @default("{}")
+  total         Float
+  average       Float
+  grade         String
+  position      Int?
+  outOf         Int?
+  teacherComment String?
+  principalComment String?
+  status        String    @default("draft")
+  publishedAt   DateTime?
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  senderId      String
+  sender        User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId    String
+  receiver      User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  subject       String
+  content       String
+  read          Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+}
+
+model Announcement {
+  id            String    @id @default(cuid())
+  title         String
+  content       String
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  targetRoles   String    @default("all")
+  priority      String    @default("normal")
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime?
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       User      @relation(fields: [studentId], references: [id])
+  amount        Float
+  reference     String    @unique
+  method        String
+  status        String    @default("pending")
+  transactionId String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model ForumPost {
+  id            String    @id @default(cuid())
+  title         String
+  content       String
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  category      String    @default("general")
+  likes         Int       @default(0)
+  isPinned      Boolean   @default(false)
+  isLocked      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  comments      ForumComment[]
+}
+
+model ForumComment {
+  id            String    @id @default(cuid())
+  content       String
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  postId        String
+  post          ForumPost @relation(fields: [postId], references: [id])
+  likes         Int       @default(0)
+  createdAt     DateTime  @default(now())
+}
