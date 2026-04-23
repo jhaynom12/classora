@@ -9,141 +9,188 @@ export async function POST(request: NextRequest) {
     console.log('🌱 Starting database seeding...');
 
     // Create default school
-    const school = await prisma.school.upsert({
-      where: { slug: 'default-school' },
-      update: {},
-      create: {
-        name: 'Classora Demo School',
-        slug: 'default-school',
-        address: '123 Education Street, Knowledge City',
-        phone: '+234 123 456 7890',
-        email: 'info@classora.com',
-        primaryColor: '#6366f1'
-      }
+    let school = await prisma.school.findUnique({
+      where: { slug: 'default-school' }
     });
 
-    console.log(`✅ School created: ${school.name}`);
+    if (!school) {
+      school = await prisma.school.create({
+        data: {
+          name: 'Classora Demo School',
+          slug: 'default-school',
+          address: '123 Education Street, Knowledge City',
+          phone: '+234 123 456 7890',
+          email: 'info@classora.com',
+          primaryColor: '#6366f1'
+        }
+      });
+    }
+
+    console.log(`✅ School ready: ${school.name}`);
 
     // Create admin user
-    const adminPassword = await bcrypt.hash('admin123', 10);
-    const admin = await prisma.user.upsert({
-      where: { email: 'admin@classora.com' },
-      update: {},
-      create: {
-        name: 'School Admin',
-        email: 'admin@classora.com',
-        password: adminPassword,
-        role: 'admin',
-        schoolId: school.id,
-        staffId: 'ADM001',
-        isActive: true
-      }
+    let admin = await prisma.user.findUnique({
+      where: { email: 'admin@classora.com' }
     });
 
-    console.log(`✅ Admin created: ${admin.email}`);
+    if (!admin) {
+      const adminPassword = await bcrypt.hash('admin123', 10);
+      admin = await prisma.user.create({
+        data: {
+          name: 'School Admin',
+          email: 'admin@classora.com',
+          password: adminPassword,
+          role: 'admin',
+          schoolId: school.id,
+          staffId: 'ADM001',
+          isActive: true
+        }
+      });
+    }
+
+    console.log(`✅ Admin ready: ${admin.email}`);
 
     // Create teacher
-    const teacherPassword = await bcrypt.hash('teacher123', 10);
-    const teacher = await prisma.user.upsert({
-      where: { email: 'teacher@classora.com' },
-      update: {},
-      create: {
-        name: 'Mrs. Adebayo',
-        email: 'teacher@classora.com',
-        password: teacherPassword,
-        role: 'teacher',
-        schoolId: school.id,
-        staffId: 'TCH001',
-        isActive: true
-      }
+    let teacher = await prisma.user.findUnique({
+      where: { email: 'teacher@classora.com' }
     });
 
-    console.log(`✅ Teacher created: ${teacher.email}`);
+    if (!teacher) {
+      const teacherPassword = await bcrypt.hash('teacher123', 10);
+      teacher = await prisma.user.create({
+        data: {
+          name: 'Mrs. Adebayo',
+          email: 'teacher@classora.com',
+          password: teacherPassword,
+          role: 'teacher',
+          schoolId: school.id,
+          staffId: 'TCH001',
+          isActive: true
+        }
+      });
+    }
+
+    console.log(`✅ Teacher ready: ${teacher.email}`);
 
     // Create parent
-    const parentPassword = await bcrypt.hash('parent123', 10);
-    const parent = await prisma.user.upsert({
-      where: { email: 'parent@classora.com' },
-      update: {},
-      create: {
-        name: 'Mr. Okafor',
-        email: 'parent@classora.com',
-        password: parentPassword,
-        role: 'parent',
-        schoolId: school.id,
-        parentId: 'PAR001',
-        isActive: true
-      }
+    let parent = await prisma.user.findUnique({
+      where: { email: 'parent@classora.com' }
     });
 
-    console.log(`✅ Parent created: ${parent.email}`);
+    if (!parent) {
+      const parentPassword = await bcrypt.hash('parent123', 10);
+      parent = await prisma.user.create({
+        data: {
+          name: 'Mr. Okafor',
+          email: 'parent@classora.com',
+          password: parentPassword,
+          role: 'parent',
+          schoolId: school.id,
+          isActive: true
+        }
+      });
+    }
+
+    console.log(`✅ Parent ready: ${parent.email}`);
 
     // Create student
-    const studentPassword = await bcrypt.hash('student123', 10);
-    const student = await prisma.user.upsert({
-      where: { email: 'student@classora.com' },
-      update: {},
-      create: {
-        name: 'Adeola Johnson',
-        email: 'student@classora.com',
-        password: studentPassword,
-        role: 'student',
-        schoolId: school.id,
-        admissionNo: 'STU001',
-        isActive: true
-      }
+    let student = await prisma.user.findUnique({
+      where: { email: 'student@classora.com' }
     });
 
-    console.log(`✅ Student created: ${student.email}`);
+    if (!student) {
+      const studentPassword = await bcrypt.hash('student123', 10);
+      student = await prisma.user.create({
+        data: {
+          name: 'Adeola Johnson',
+          email: 'student@classora.com',
+          password: studentPassword,
+          role: 'student',
+          schoolId: school.id,
+          studentId: 'STU001',
+          isActive: true
+        }
+      });
+    }
 
-    // Create sample classes and subjects
-    const mathSubject = await prisma.subject.upsert({
-      where: { code: 'MATH' },
-      update: {},
-      create: {
-        name: 'Mathematics',
+    console.log(`✅ Student ready: ${student.email}`);
+
+    // Create sample subjects
+    let mathSubject = await prisma.subject.findFirst({
+      where: {
         code: 'MATH',
         schoolId: school.id
       }
     });
 
-    const scienceSubject = await prisma.subject.upsert({
-      where: { code: 'SCI' },
-      update: {},
-      create: {
-        name: 'Science',
+    if (!mathSubject) {
+      mathSubject = await prisma.subject.create({
+        data: {
+          name: 'Mathematics',
+          code: 'MATH',
+          schoolId: school.id
+        }
+      });
+    }
+
+    let scienceSubject = await prisma.subject.findFirst({
+      where: {
         code: 'SCI',
         schoolId: school.id
       }
     });
 
-    const englishSubject = await prisma.subject.upsert({
-      where: { code: 'ENG' },
-      update: {},
-      create: {
-        name: 'English',
+    if (!scienceSubject) {
+      scienceSubject = await prisma.subject.create({
+        data: {
+          name: 'Science',
+          code: 'SCI',
+          schoolId: school.id
+        }
+      });
+    }
+
+    let englishSubject = await prisma.subject.findFirst({
+      where: {
         code: 'ENG',
         schoolId: school.id
       }
     });
 
-    console.log('✅ Subjects created');
+    if (!englishSubject) {
+      englishSubject = await prisma.subject.create({
+        data: {
+          name: 'English',
+          code: 'ENG',
+          schoolId: school.id
+        }
+      });
+    }
+
+    console.log('✅ Subjects ready');
 
     // Create a sample class
-    const classRecord = await prisma.class.upsert({
-      where: { code: 'SS2-SCI' },
-      update: {},
-      create: {
+    let classRecord = await prisma.class.findFirst({
+      where: {
         name: 'SS2 Science',
-        code: 'SS2-SCI',
-        schoolId: school.id,
-        teacherId: teacher.id,
-        academicYear: '2024/2025',
-        term: 'First Term'
+        schoolId: school.id
       }
     });
 
-    console.log(`✅ Class created: ${classRecord.name}`);
+    if (!classRecord) {
+      classRecord = await prisma.class.create({
+        data: {
+          name: 'SS2 Science',
+          section: 'A',
+          schoolId: school.id,
+          teacherId: teacher.id,
+          level: 2,
+          status: 'active'
+        }
+      });
+    }
+
+    console.log(`✅ Class ready: ${classRecord.name}`);
 
     return NextResponse.json({
       success: true,
@@ -159,7 +206,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Seeding failed:', error);
     return NextResponse.json(
-      { success: false, error: 'Seeding failed', details: error.message },
+      { success: false, error: 'Seeding failed', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   } finally {

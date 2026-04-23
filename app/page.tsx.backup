@@ -1,0 +1,480 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  GraduationCap, 
+  Users, 
+  UserCog, 
+  Briefcase, 
+  Heart,
+  ArrowRight,
+  Sparkles,
+  Shield,
+  Zap,
+  Globe,
+  Moon,
+  Sun,
+  Fingerprint,
+  ChevronRight,
+  Star,
+  Crown,
+  BookOpen,
+  Target,
+  Award,
+  TrendingUp,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
+
+const roles = [
+  { 
+    id: 'student', 
+    name: 'Student', 
+    icon: GraduationCap, 
+    gradient: 'from-blue-600 to-indigo-600',
+    lightGradient: 'from-blue-50 to-indigo-50',
+    border: 'hover:border-blue-500',
+    glow: 'shadow-blue-500/30',
+    color: 'blue',
+    description: 'Access grades, assignments & AI insights',
+    bgImage: 'url(https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=800&fit=crop)',
+    stats: ['85% Avg Score', 'Top 15%', '12 Achievements']
+  },
+  { 
+    id: 'teacher', 
+    name: 'Teacher', 
+    icon: Users, 
+    gradient: 'from-orange-500 to-red-600',
+    lightGradient: 'from-orange-50 to-red-50',
+    border: 'hover:border-orange-500',
+    glow: 'shadow-orange-500/30',
+    color: 'orange',
+    description: 'Upload marks, manage classes & analytics',
+    bgImage: 'url(https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=800&fit=crop)',
+    stats: ['3 Classes', '94 Students', '74% Avg']
+  },
+  { 
+    id: 'parent', 
+    name: 'Parent', 
+    icon: Heart, 
+    gradient: 'from-emerald-500 to-green-600',
+    lightGradient: 'from-emerald-50 to-green-50',
+    border: 'hover:border-emerald-500',
+    glow: 'shadow-emerald-500/30',
+    color: 'emerald',
+    description: 'Track progress & school updates',
+    bgImage: 'url(https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&h=800&fit=crop)',
+    stats: ['2 Children', '95% Attendance', 'A- Average']
+  },
+  { 
+    id: 'staff', 
+    name: 'Staff', 
+    icon: Briefcase, 
+    gradient: 'from-purple-500 to-pink-600',
+    lightGradient: 'from-purple-50 to-pink-50',
+    border: 'hover:border-purple-500',
+    glow: 'shadow-purple-500/30',
+    color: 'purple',
+    description: 'Administrative tools & reports',
+    bgImage: 'url(https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=800&fit=crop)',
+    stats: ['24 Tasks', '8 Reports', '12 Events']
+  },
+  { 
+    id: 'admin', 
+    name: 'Admin', 
+    icon: Crown, 
+    gradient: 'from-slate-700 to-gray-900',
+    lightGradient: 'from-slate-100 to-gray-100',
+    border: 'hover:border-slate-600',
+    glow: 'shadow-slate-500/30',
+    color: 'slate',
+    description: 'Full control & system configuration',
+    bgImage: 'url(https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=800&fit=crop)',
+    stats: ['450 Students', '24 Teachers', '98% Health']
+  },
+];
+
+export default function Home() {
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [hoveredRole, setHoveredRole] = useState<string | null>(null);
+  const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    const expectedPassword = `${selectedRole}123`;
+    
+    if (password !== expectedPassword) {
+      setError(`Invalid password. Try: ${expectedPassword}`);
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      localStorage.setItem('classora_user', JSON.stringify({
+        name: username,
+        role: selectedRole,
+        loggedIn: true
+      }));
+      window.location.href = `/dashboard/${selectedRole}`;
+    }, 1500);
+  };
+
+  const getRoleConfig = (roleId: string) => {
+    return roles.find(r => r.id === roleId)!;
+  };
+
+  const getColorClasses = (color: string) => {
+    const colors: Record<string, { bg: string; text: string; border: string; glow: string }> = {
+      blue: { bg: 'bg-blue-600', text: 'text-blue-600', border: 'border-blue-600', glow: 'shadow-blue-500/50' },
+      orange: { bg: 'bg-orange-600', text: 'text-orange-600', border: 'border-orange-600', glow: 'shadow-orange-500/50' },
+      emerald: { bg: 'bg-emerald-600', text: 'text-emerald-600', border: 'border-emerald-600', glow: 'shadow-emerald-500/50' },
+      purple: { bg: 'bg-purple-600', text: 'text-purple-600', border: 'border-purple-600', glow: 'shadow-purple-500/50' },
+      slate: { bg: 'bg-slate-700', text: 'text-slate-700', border: 'border-slate-700', glow: 'shadow-slate-500/50' },
+    };
+    return colors[color] || colors.blue;
+  };
+
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500">
+      {/* Premium Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-float-delayed" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl animate-pulse-slow" />
+          
+          {/* Grid Pattern */}
+          <svg className="absolute inset-0 w-full h-full opacity-[0.02] dark:opacity-[0.03]">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Theme Toggle */}
+      <motion.button
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={toggleTheme}
+        className="fixed top-6 right-6 z-50 p-3 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg transition-all hover:scale-110 border border-gray-200 dark:border-gray-700"
+      >
+        {theme === 'light' ? <Moon className="w-5 h-5 text-gray-700" /> : <Sun className="w-5 h-5 text-yellow-500" />}
+      </motion.button>
+
+      <div className="relative z-10 container mx-auto px-4 py-12 min-h-screen flex items-center justify-center">
+        <div className="max-w-7xl w-full">
+          {/* Hero Section - Premium */}
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, type: 'spring' }}
+            className="text-center mb-20"
+          >
+            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 p-5 rounded-2xl mb-8 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              <GraduationCap className="w-12 h-12 text-white relative z-10" />
+              <span className="text-4xl font-bold text-white relative z-10">Classora</span>
+              <Sparkles className="w-6 h-6 text-yellow-300 relative z-10 animate-pulse" />
+            </div>
+            
+            <h1 className="text-7xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
+              Modern School OS
+            </h1>
+            
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              Empowering education through intelligent technology, real-time analytics, and AI-driven insights
+            </p>
+            
+            {/* Premium Stats Badges */}
+            <div className="flex justify-center gap-4 mt-10">
+              {[
+                { icon: Shield, label: 'Enterprise Grade', color: 'blue' },
+                { icon: Zap, label: 'Lightning Fast', color: 'purple' },
+                { icon: Globe, label: 'Global Standards', color: 'emerald' },
+                { icon: Award, label: 'AI Powered', color: 'orange' },
+              ].map((stat, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + idx * 0.1 }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg shadow-md border border-gray-200 dark:border-gray-700"
+                >
+                  <stat.icon className={`w-4 h-4 text-${stat.color}-500`} />
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{stat.label}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Role Selection - Premium Cards */}
+          {!selectedRole ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid grid-cols-1 md:grid-cols-5 gap-8"
+            >
+              {roles.map((role, index) => {
+                const colors = getColorClasses(role.color);
+                const isHovered = hoveredRole === role.id;
+                
+                return (
+                  <motion.div
+                    key={role.id}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, type: 'spring', stiffness: 100 }}
+                    onHoverStart={() => setHoveredRole(role.id)}
+                    onHoverEnd={() => setHoveredRole(null)}
+                    onClick={() => setSelectedRole(role.id)}
+                    className="group cursor-pointer relative"
+                  >
+                    <motion.div
+                      animate={{
+                        scale: isHovered ? 1.05 : 1,
+                        y: isHovered ? -8 : 0,
+                      }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                      className={`relative rounded-2xl overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-2 transition-all duration-300 ${isHovered ? colors.glow : 'border-gray-200 dark:border-gray-700'}`}
+                    >
+                      {/* Background Image Overlay */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent" />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="relative p-6 z-10">
+                        <motion.div
+                          animate={{ scale: isHovered ? 1.1 : 1, rotate: isHovered ? 5 : 0 }}
+                          className={`w-20 h-20 rounded-2xl ${colors.bg} flex items-center justify-center mb-5 shadow-lg`}
+                        >
+                          <role.icon className="w-10 h-10 text-white" />
+                        </motion.div>
+                        
+                        <h3 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${isHovered ? colors.text : 'text-gray-900 dark:text-white'}`}>
+                          {role.name}
+                        </h3>
+                        
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">
+                          {role.description}
+                        </p>
+                        
+                        {/* Stats Mini */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {role.stats.map((stat, i) => (
+                            <span key={i} className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                              {stat}
+                            </span>
+                          ))}
+                        </div>
+                        
+                        <motion.div
+                          animate={{ x: isHovered ? 5 : 0 }}
+                          className={`flex items-center gap-2 font-semibold text-sm ${colors.text} transition-all`}
+                        >
+                          <span>Enter Portal</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </motion.div>
+                      </div>
+                      
+                      {/* Decorative Element */}
+                      <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-2xl" />
+                    </motion.div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="login"
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -30 }}
+                transition={{ type: 'spring', damping: 20 }}
+                className="max-w-lg mx-auto"
+              >
+                <div className="relative rounded-3xl overflow-hidden bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl border border-gray-200 dark:border-gray-700">
+                  {/* Premium Gradient Border */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  {/* Header with Role Color */}
+                  <div className={`bg-gradient-to-r ${getRoleConfig(selectedRole).gradient} p-6 text-white`}>
+                    <button
+                      onClick={() => {
+                        setSelectedRole(null);
+                        setError('');
+                        setUsername('');
+                        setPassword('');
+                      }}
+                      className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2 group"
+                    >
+                      <ArrowRight className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                      <span className="text-sm">Back to roles</span>
+                    </button>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        {(() => {
+                          const Icon = getRoleConfig(selectedRole).icon;
+                          return <Icon className="w-8 h-8 text-white" />;
+                        })()}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold">
+                          {getRoleConfig(selectedRole).name} Portal
+                        </h2>
+                        <p className="text-white/80 text-sm">Enter your credentials to continue</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Form */}
+                  <div className="p-8 space-y-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Username / ID / Email
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="e.g., john.doe@school.com"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all"
+                          onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full pl-10 pr-12 py-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all"
+                          onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5 text-gray-400" /> : <Eye className="w-5 h-5 text-gray-400" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-3"
+                        >
+                          <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleLogin}
+                      disabled={loading}
+                      className={`w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r ${getRoleConfig(selectedRole).gradient} transition-all hover:shadow-xl disabled:opacity-50 flex items-center justify-center gap-3 relative overflow-hidden group`}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      {loading ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Authenticating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Access Dashboard</span>
+                          <Fingerprint className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Demo Mode • Use any username + password: <code className="font-mono bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">{selectedRole}123</code>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(20px, -20px); }
+        }
+        @keyframes float-delayed {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-20px, 20px); }
+        }
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+          animation: float-delayed 10s ease-in-out infinite;
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 6s ease-in-out infinite;
+        }
+        .animate-gradient {
+          background-size: 200% auto;
+          animation: gradient 3s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
