@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useTheme } from '@/components/theme-provider';
 import ActionButtons from '@/app/components/ActionButtons';
 import PerformanceInsights from '@/app/components/PerformanceInsights';
+import TeacherClassManagement from '@/app/components/TeacherClassManagement';
 
 interface Student {
   id: string;
@@ -81,17 +82,26 @@ export default function TeacherDashboard() {
   const [schoolName, setSchoolName] = useState('Your School');
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [showUploadMarksheet, setShowUploadMarksheet] = useState(false);
+  const [showCreateAssignmentModal, setShowCreateAssignmentModal] = useState(false);
+  const [newAssignmentTitle, setNewAssignmentTitle] = useState('');
+  const [newAssignmentSubject, setNewAssignmentSubject] = useState('');
+  const [newAssignmentClass, setNewAssignmentClass] = useState('');
+  const [newAssignmentDueDate, setNewAssignmentDueDate] = useState('');
+  const [newAssignmentTotalMarks, setNewAssignmentTotalMarks] = useState('100');
+  const [newAssignmentInstructions, setNewAssignmentInstructions] = useState('');
+  const [creatingAssignment, setCreatingAssignment] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [marksheetData, setMarksheetData] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   // Sample classes data
   const classes: Class[] = [
@@ -124,12 +134,12 @@ export default function TeacherDashboard() {
     },
   ];
 
-  // Sample assignments
-  const assignments: Assignment[] = [
+  // Sample assignments - will be replaced with API call
+  const [assignments, setAssignments] = useState<Assignment[]>([
     { id: '1', title: 'Algebra Worksheet', subject: 'Mathematics', class: 'SS2 Science', dueDate: '2024-04-18', totalMarks: 50, submissions: 28, totalStudents: 32, status: 'active' },
     { id: '2', title: 'Calculus Assignment', subject: 'Mathematics', class: 'SS2 Science', dueDate: '2024-04-25', totalMarks: 100, submissions: 15, totalStudents: 32, status: 'active' },
     { id: '3', title: 'Geometry Project', subject: 'Mathematics', class: 'SS2 Art', dueDate: '2024-04-20', totalMarks: 100, submissions: 10, totalStudents: 25, status: 'active' },
-  ];
+  ]);
 
   // Sample messages
   const messages: Message[] = [
@@ -168,18 +178,16 @@ export default function TeacherDashboard() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchAssignments();
+    }
+  }, [user]);
+
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = '/';
-  };
-
-  const getGradeColor = (grade: string) => {
-    if (!grade) return 'text-gray-400';
-    if (grade.startsWith('A')) return 'text-green-400';
-    if (grade.startsWith('B')) return 'text-blue-400';
-    if (grade.startsWith('C')) return 'text-yellow-400';
-    return 'text-red-400';
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,9 +206,79 @@ export default function TeacherDashboard() {
     }
   };
 
+  const fetchAssignments = async () => {
+    if (!user?.id) return;
+    
+    setLoadingAssignments(true);
+    try {
+      const response = await fetch(`/api/assignments?teacherId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Transform API data to match component interface
+        const transformedAssignments = data.map((assignment: any) => ({
+          id: assignment.id,
+          title: assignment.title,
+          subject: assignment.subject?.name || 'Unknown Subject',
+          class: assignment.class?.name || 'Unknown Class',
+          dueDate: new Date(assignment.dueDate).toLocaleDateString(),
+          totalMarks: assignment.totalMarks,
+          submissions: assignment._count?.submissions || 0,
+          totalStudents: assignment.class?.enrollments?.length || 0,
+          status: assignment.status || 'active'
+        }));
+        setAssignments(transformedAssignments);
+      }
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
+
   const getUnreadMessages = () => messages.filter((m) => !m.read).length;
   const getTotalStudents = () => classes.reduce((sum, c) => sum + c.students.length, 0);
   const getAtRiskStudents = () => classes.reduce((sum, c) => sum + c.atRisk, 0);
+
+  const availableSubjects = Array.from(new Set(classes.map((c) => c.subject)));
+
+  const handleCreateAssignment = async () => {
+    if (!newAssignmentTitle || !newAssignmentClass || !newAssignmentSubject || !newAssignmentDueDate) {
+      return;
+    }
+
+    setCreatingAssignment(true);
+
+    const selectedClassData = classes.find((c) => c.id === newAssignmentClass);
+    const assignment: Assignment = {
+      id: `new-${Date.now()}`,
+      title: newAssignmentTitle,
+      subject: newAssignmentSubject,
+      class: selectedClassData?.name || 'Unknown Class',
+      dueDate: new Date(newAssignmentDueDate).toLocaleDateString(),
+      totalMarks: Number(newAssignmentTotalMarks) || 100,
+      submissions: 0,
+      totalStudents: selectedClassData?.students.length || 0,
+      status: 'active'
+    };
+
+    setAssignments((prev) => [assignment, ...prev]);
+    setShowCreateAssignmentModal(false);
+    setNewAssignmentTitle('');
+    setNewAssignmentSubject('');
+    setNewAssignmentClass('');
+    setNewAssignmentDueDate('');
+    setNewAssignmentTotalMarks('100');
+    setNewAssignmentInstructions('');
+    setCreatingAssignment(false);
+  };
+
+  const getGradeColor = (grade: string) => {
+    if (!grade) return 'text-gray-400';
+    if (grade.startsWith('A')) return 'text-green-400';
+    if (grade.startsWith('B')) return 'text-blue-400';
+    if (grade.startsWith('C')) return 'text-yellow-400';
+    return 'text-red-400';
+  };
 
   if (!mounted || !user) return null;
 
@@ -248,6 +326,7 @@ export default function TeacherDashboard() {
                 {[
                   { id: 'overview', icon: Home, label: 'Overview' },
                   { id: 'classes', icon: BookOpen, label: 'My Classes' },
+                  { id: 'manage-classes', icon: Users, label: 'Manage Classes' },
                   { id: 'assignments', icon: FileText, label: 'Assignments' },
                   { id: 'messages', icon: MessageCircle, label: 'Messages', badge: getUnreadMessages() },
                   { id: 'analytics', icon: BarChart3, label: 'Analytics' },
@@ -314,6 +393,7 @@ export default function TeacherDashboard() {
                   {[
                     { id: 'overview', label: 'Overview' },
                     { id: 'classes', label: 'My Classes' },
+                    { id: 'manage-classes', label: 'Manage Classes' },
                     { id: 'assignments', label: 'Assignments' },
                     { id: 'messages', label: 'Messages', badge: getUnreadMessages() },
                     { id: 'analytics', label: 'Analytics' },
@@ -527,7 +607,10 @@ export default function TeacherDashboard() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('assignments')}
+                  onClick={() => {
+                    setActiveTab('assignments');
+                    setShowCreateAssignmentModal(true);
+                  }}
                   className="rounded-2xl overflow-hidden bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl border border-purple-500/30 p-6 text-center hover:scale-105 transition-transform"
                 >
                   <FileText className="w-8 h-8 text-purple-400 mx-auto mb-3" />
@@ -782,9 +865,19 @@ export default function TeacherDashboard() {
                                 </span>
                               </td>
                               <td className="p-4">
-                                <button className="p-1 rounded-lg hover:bg-white/10 transition-colors">
-                                  <MoreVertical className="w-4 h-4 text-gray-400" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <a 
+                                    href={`/dashboard/student/profile?studentId=${student.admissionNo}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                    title="View Profile"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </a>
+                                  <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                                    <MoreVertical className="w-4 h-4 text-gray-400" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -849,6 +942,16 @@ export default function TeacherDashboard() {
             </div>
           )}
 
+          {/* Manage Classes Tab */}
+          {activeTab === 'manage-classes' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <TeacherClassManagement />
+            </motion.div>
+          )}
+
           {/* Assignments Tab */}
           {activeTab === 'assignments' && (
             <motion.div
@@ -857,7 +960,10 @@ export default function TeacherDashboard() {
               className="space-y-6"
             >
               <div className="flex justify-end">
-                <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium hover:shadow-xl transition-all flex items-center gap-2">
+                <button
+                  onClick={() => setShowCreateAssignmentModal(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium hover:shadow-xl transition-all flex items-center gap-2"
+                >
                   <Plus className="w-4 h-4" />
                   Create New Assignment
                 </button>
@@ -921,6 +1027,130 @@ export default function TeacherDashboard() {
             </motion.div>
           )}
 
+          <AnimatePresence>
+            {showCreateAssignmentModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+                onClick={() => setShowCreateAssignmentModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.95 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-2xl rounded-3xl bg-slate-950/95 border border-white/10 p-6 shadow-2xl backdrop-blur-xl"
+                >
+                  <div className="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Create New Assignment</h2>
+                      <p className="text-sm text-gray-400">Add assignment details and publish for your class.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowCreateAssignmentModal(false)}
+                      className="rounded-full p-2 bg-white/5 text-gray-300 hover:bg-white/10 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Title</label>
+                      <input
+                        value={newAssignmentTitle}
+                        onChange={(e) => setNewAssignmentTitle(e.target.value)}
+                        placeholder="Enter assignment title"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Class</label>
+                        <select
+                          value={newAssignmentClass}
+                          onChange={(e) => setNewAssignmentClass(e.target.value)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        >
+                          <option value="">Select class</option>
+                          {classes.map((classItem) => (
+                            <option key={classItem.id} value={classItem.id}>{classItem.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Subject</label>
+                        <select
+                          value={newAssignmentSubject}
+                          onChange={(e) => setNewAssignmentSubject(e.target.value)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        >
+                          <option value="">Select subject</option>
+                          {availableSubjects.map((subject) => (
+                            <option key={subject} value={subject}>{subject}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Due Date</label>
+                        <input
+                          type="date"
+                          value={newAssignmentDueDate}
+                          onChange={(e) => setNewAssignmentDueDate(e.target.value)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Total Marks</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newAssignmentTotalMarks}
+                          onChange={(e) => setNewAssignmentTotalMarks(e.target.value)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Instructions</label>
+                      <textarea
+                        value={newAssignmentInstructions}
+                        onChange={(e) => setNewAssignmentInstructions(e.target.value)}
+                        rows={4}
+                        placeholder="Add assignment details, questions or instructions"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500 resize-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      <button
+                        onClick={handleCreateAssignment}
+                        disabled={creatingAssignment}
+                        className="flex-1 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 px-5 py-3 text-white font-semibold hover:shadow-xl transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {creatingAssignment ? 'Creating...' : 'Publish Assignment'}
+                      </button>
+                      <button
+                        onClick={() => setShowCreateAssignmentModal(false)}
+                        className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-white hover:bg-white/10 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Messages Tab */}
           {activeTab === 'messages' && (
             <motion.div
@@ -949,7 +1179,11 @@ export default function TeacherDashboard() {
                           <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
                             <div>
                               <span className="text-white font-semibold">{message.fromName}</span>
-                              {message.isParent && <span className="text-emerald-400 text-xs ml-2">Parent</span>}
+                              <span className={`text-xs ml-2 px-1.5 py-0.5 rounded-full ${
+                                message.isParent ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'
+                              }`}>
+                                {message.isParent ? 'Parent' : 'Admin'}
+                              </span>
                             </div>
                             <span className="text-gray-500 text-xs">{message.date}</span>
                           </div>

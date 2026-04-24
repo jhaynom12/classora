@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import ActionButtons from '@/app/components/ActionButtons';
+import BulkUserManager from '@/app/components/BulkUserManager';
 
 // Types
 interface Class {
@@ -156,6 +157,7 @@ export default function AdminManagement() {
   };
 
   const sections = [
+    { id: 'bulk', label: 'Bulk Import', icon: Upload, description: 'Import users from CSV' },
     { id: 'classes', label: 'Classes', icon: School, description: 'Manage classes and sections' },
     { id: 'subjects', label: 'Subjects', icon: BookOpen, description: 'Manage subjects and curriculum' },
     { id: 'teachers', label: 'Teachers', icon: Briefcase, description: 'Manage teacher profiles' },
@@ -317,6 +319,18 @@ export default function AdminManagement() {
             Add New {activeSection.slice(0, -1).charAt(0).toUpperCase() + activeSection.slice(0, -1).slice(1)}
           </button>
         </div>
+
+        {/* BULK IMPORT SECTION */}
+        {activeSection === 'bulk' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl p-8 bg-white/5 backdrop-blur-xl border border-white/10"
+          >
+            <h2 className="text-2xl font-bold text-white mb-6">Bulk User Import/Export</h2>
+            <BulkUserManager schoolId={user?.schoolId || 'default-school'} onSuccess={() => setSearchTerm('')} />
+          </motion.div>
+        )}
 
         {/* CLASSES SECTION */}
         {activeSection === 'classes' && (

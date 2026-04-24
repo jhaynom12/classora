@@ -69,6 +69,12 @@ export default function StudentDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [assignments, setAssignments] = useState<Assignment[]>([
+    { name: "Algebra Worksheet", subject: "Mathematics", dueDate: "2024-04-18", status: "pending", description: "Complete questions 1-15 on quadratic equations" },
+    { name: "Lab Report", subject: "Chemistry", dueDate: "2024-04-19", status: "pending", description: "Write up the acid-base titration experiment" },
+    { name: "Essay: Climate Change", subject: "English", dueDate: "2024-04-17", status: "submitted", description: "500-word essay on climate impact" },
+  ]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
 
   const subjects: Subject[] = [
     { name: "Mathematics", score: 85, grade: "A", trend: "up", teacher: "Mrs. Adebayo", remark: "Excellent progress in algebra", improvement: 8 },
@@ -82,12 +88,6 @@ export default function StudentDashboard() {
     { name: "Mid-Term Examination", subject: "Mathematics", date: "2024-04-20", time: "10:00 AM", venue: "Hall A", topics: ["Algebra", "Trigonometry", "Calculus"] },
     { name: "Practical Test", subject: "Physics", date: "2024-04-22", time: "2:00 PM", venue: "Lab 2", topics: ["Mechanics", "Electricity", "Optics"] },
     { name: "Essay Writing", subject: "English", date: "2024-04-25", time: "9:00 AM", venue: "Hall B", topics: ["Composition", "Comprehension", "Summary"] },
-  ];
-
-  const assignments: Assignment[] = [
-    { name: "Algebra Worksheet", subject: "Mathematics", dueDate: "2024-04-18", status: "pending", description: "Complete questions 1-15 on quadratic equations" },
-    { name: "Lab Report", subject: "Chemistry", dueDate: "2024-04-19", status: "pending", description: "Write up the acid-base titration experiment" },
-    { name: "Essay: Climate Change", subject: "English", dueDate: "2024-04-17", status: "submitted", description: "500-word essay on climate impact" },
   ];
 
   const announcements: Announcement[] = [
@@ -111,10 +111,35 @@ export default function StudentDashboard() {
     if (savedSchool) setSchoolName(savedSchool);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "/";
+  useEffect(() => {
+    if (user?.id) {
+      fetchAssignments();
+    }
+  }, [user]);
+
+  const fetchAssignments = async () => {
+    if (!user?.id) return;
+    
+    setLoadingAssignments(true);
+    try {
+      const response = await fetch(`/api/assignments?studentId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Transform API data to match component interface
+        const transformedAssignments = data.map((assignment: any) => ({
+          name: assignment.title,
+          subject: assignment.subject?.name || 'Unknown Subject',
+          dueDate: new Date(assignment.dueDate).toLocaleDateString(),
+          status: assignment.status || 'pending',
+          description: assignment.description || assignment.instructions || 'No description available'
+        }));
+        setAssignments(transformedAssignments);
+      }
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      setLoadingAssignments(false);
+    }
   };
 
   const getGradeColor = (grade: string) => {
@@ -140,6 +165,12 @@ export default function StudentDashboard() {
     if (priority === "high") return "text-red-400 bg-red-500/10";
     if (priority === "medium") return "text-yellow-400 bg-yellow-500/10";
     return "text-blue-400 bg-blue-500/10";
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/';
   };
 
   const averageScore = Math.round(subjects.reduce((acc, s) => acc + s.score, 0) / subjects.length);

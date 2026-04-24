@@ -27,6 +27,7 @@ export default function ParentProfile() {
     phone: "+234 802 345 6789",
     address: "123 Knowledge Street, Lagos, Nigeria",
     occupation: "Software Engineer",
+    profession: "", // Short profession tag like "Dr", "Eng", "Teacher", etc.
     emergencyContact: "+234 803 456 7890"
   });
 
@@ -43,7 +44,8 @@ export default function ParentProfile() {
       setProfileData(prev => ({
         ...prev,
         name: parsedUser.name,
-        email: parsedUser.email || "parent@classora.com"
+        email: parsedUser.email || "parent@classora.com",
+        profession: parsedUser.profession || ""
       }));
     } else {
       window.location.href = "/";
@@ -80,9 +82,33 @@ export default function ParentProfile() {
     }
   };
 
-  const handleSave = () => {
-    setEditing(false);
-    localStorage.setItem("parent_profile", JSON.stringify(profileData));
+  const handleSave = async () => {
+    try {
+      // Save to database
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: user.id,
+          profession: profileData.profession
+        })
+      });
+      
+      if (response.ok) {
+        setEditing(false);
+        localStorage.setItem("parent_profile", JSON.stringify(profileData));
+      // Update localStorage user data
+        const updatedUser = { ...user, profession: profileData.profession, childrenCount: children.length };
+        localStorage.setItem("classora_user", JSON.stringify(updatedUser));
+        setUser(updatedUser);
+      } else {
+        alert('Failed to save profile. Please try again.');
+      }
+    } catch (error) {
+      alert('Error saving profile. Please try again.');
+    }
   };
 
   const avgChildrenScore = Math.round(children.reduce((sum, c) => sum + c.averageScore, 0) / children.length);
@@ -268,6 +294,24 @@ export default function ParentProfile() {
                     <input type="text" value={profileData.occupation} onChange={(e) => setProfileData({ ...profileData, occupation: e.target.value })} className="w-full bg-transparent text-white outline-none" />
                   ) : (
                     <p className="text-white">{profileData.occupation}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <Star className="w-5 h-5 text-gray-400" />
+                <div className="flex-1">
+                  <p className="text-gray-400 text-xs">Profession Tag (e.g., Dr, Eng, Teacher)</p>
+                  {editing ? (
+                    <input 
+                      type="text" 
+                      value={profileData.profession} 
+                      onChange={(e) => setProfileData({ ...profileData, profession: e.target.value })} 
+                      className="w-full bg-transparent text-white outline-none" 
+                      placeholder="Enter short profession tag"
+                      maxLength={10}
+                    />
+                  ) : (
+                    <p className="text-white">{profileData.profession || "Not set"}</p>
                   )}
                 </div>
               </div>

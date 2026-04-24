@@ -8,40 +8,49 @@ const prisma = new PrismaClient();
 export async function POST(request: Request) {
   try {
     const { email, password, role } = await request.json();
-    
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const loginKey = typeof email === 'string' ? email.toLowerCase() : '';
+
+    const user = await prisma.user.findFirst({
+      where: {
+        role,
+        OR: [
+          { email: loginKey },
+          { name: loginKey },
+          { staffId: loginKey },
+          { studentId: loginKey }
+        ]
+      },
       include: { school: true }
     });
-    
-    if (!user || user.role !== role) {
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       );
     }
-    
+
     const isValid = await bcrypt.compare(password, user.password);
-    
+
     if (!isValid) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       );
     }
-    
+
     const token = jwt.sign(
       { userId: user.id, role: user.role, schoolId: user.schoolId },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
     );
-    
+
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() }
     });
-    
-    return NextResponse.json({
+
+    const response = NextResponse.json({
       token,
       user: {
         id: user.id,
@@ -57,7 +66,18 @@ export async function POST(request: Request) {
         primaryColor: user.school.primaryColor
       }
     });
+
+    response.cookies.set('classora_token', token, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7
+    });
+
+    return response;
   } catch (error) {
+    console.error('Login error:', error);
     return NextResponse.json(
       { error: 'Login failed' },
       { status: 500 }

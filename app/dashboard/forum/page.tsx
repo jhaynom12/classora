@@ -18,6 +18,8 @@ interface Post {
   author: string;
   authorRole: 'teacher' | 'parent' | 'admin' | 'student';
   authorAvatar: string;
+  authorProfession?: string; // Short profession tag like "Dr", "Eng"
+  authorChildrenCount?: number; // Number of children for parents
   title: string;
   content: string;
   category: 'general' | 'academic' | 'events' | 'complaints' | 'suggestions';
@@ -34,6 +36,8 @@ interface Comment {
   author: string;
   authorRole: string;
   authorAvatar: string;
+  authorProfession?: string;
+  authorChildrenCount?: number;
   content: string;
   likes: number;
   createdAt: string;
@@ -86,6 +90,8 @@ export default function ForumPage() {
           author: 'Mr. Okafor',
           authorRole: 'parent',
           authorAvatar: 'MO',
+          authorProfession: 'Teacher',
+          authorChildrenCount: 3,
           content: 'Thank you for the update. Will there be any revision classes?',
           likes: 5,
           createdAt: '2024-04-14T10:30:00Z',
@@ -109,6 +115,8 @@ export default function ForumPage() {
       author: 'Mr. Okafor',
       authorRole: 'parent',
       authorAvatar: 'MO',
+      authorProfession: 'Teacher',
+      authorChildrenCount: 3,
       title: 'Suggestions for Improving School Facilities',
       content: 'I would like to suggest that the school considers upgrading the library facilities. More computers and reference books would greatly benefit the students.',
       category: 'suggestions',
@@ -185,6 +193,8 @@ export default function ForumPage() {
       author: user?.name || 'Anonymous',
       authorRole: user?.role || 'parent',
       authorAvatar: (user?.name?.charAt(0) || 'U').toUpperCase(),
+      authorProfession: user?.profession,
+      authorChildrenCount: user?.role === 'parent' ? (user?.childrenCount || 0) : undefined,
       content: commentText,
       likes: 0,
       createdAt: new Date().toISOString(),
@@ -204,6 +214,8 @@ export default function ForumPage() {
       author: user?.name || 'Anonymous',
       authorRole: user?.role || 'parent',
       authorAvatar: (user?.name?.charAt(0) || 'U').toUpperCase(),
+      authorProfession: user?.profession,
+      authorChildrenCount: user?.role === 'parent' ? (user?.childrenCount || 0) : undefined,
       title: newPost.title,
       content: newPost.content,
       category: newPost.category as any,
@@ -350,6 +362,26 @@ export default function ForumPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-2">
                     <span className="text-white font-semibold">{post.author}</span>
+                    {post.authorRole === 'parent' && post.authorProfession && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-300">
+                        {post.authorProfession} • {post.authorChildrenCount || 0} child{(post.authorChildrenCount || 0) !== 1 ? 'ren' : ''}
+                      </span>
+                    )}
+                    {post.authorRole === 'teacher' && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+                        Teacher
+                      </span>
+                    )}
+                    {post.authorRole === 'admin' && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
+                        Admin
+                      </span>
+                    )}
+                    {post.authorRole === 'student' && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-500/20 text-gray-300">
+                        Student
+                      </span>
+                    )}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(post.category)}`}>
                       {post.category}
                     </span>
@@ -503,7 +535,29 @@ export default function ForumPage() {
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-xs">
                             {comment.authorAvatar}
                           </div>
-                          <span className="text-white font-medium">{comment.author}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{comment.author}</span>
+                            {comment.authorRole === 'parent' && comment.authorProfession && (
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-300">
+                                {comment.authorProfession} • {comment.authorChildrenCount || 0} child{(comment.authorChildrenCount || 0) !== 1 ? 'ren' : ''}
+                              </span>
+                            )}
+                            {comment.authorRole === 'teacher' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+                                Teacher
+                              </span>
+                            )}
+                            {comment.authorRole === 'admin' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
+                                Admin
+                              </span>
+                            )}
+                            {comment.authorRole === 'student' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-500/20 text-gray-300">
+                                Student
+                              </span>
+                            )}
+                          </div>
                           <span className="text-gray-500 text-xs">{formatDate(comment.createdAt)}</span>
                         </div>
                         <p className="text-gray-300 text-sm ml-11">{comment.content}</p>

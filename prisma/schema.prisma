@@ -53,6 +53,7 @@ model User {
   
   avatar        String?
   phone         String?
+  profession    String?   // For parents: doctor, teacher, engineer, etc.
   isActive      Boolean   @default(true)
   lastLogin     DateTime?
   
@@ -70,6 +71,10 @@ model User {
   announcements Announcement[]
   payments      Payment[]
   classSubjects  ClassSubject[]
+  parentChildren ParentChild[] @relation("ParentChildren")
+  childParents   ParentChild[] @relation("ChildParents")
+  createdAssignments Assignment[] @relation("TeacherAssignments")
+  assignmentSubmissions AssignmentSubmission[]
 }
 
 model Class {
@@ -86,6 +91,7 @@ model Class {
   enrollments   Enrollment[]
   subjects      ClassSubject[]
   results       Result[]
+  assignments   Assignment[]
 }
 
 model Subject {
@@ -97,6 +103,7 @@ model Subject {
   isElective    Boolean   @default(false)
   
   classSubjects ClassSubject[]
+  assignments   Assignment[]
 }
 
 model ClassSubject {
@@ -223,4 +230,63 @@ model ForumComment {
   post          ForumPost @relation(fields: [postId], references: [id])
   likes         Int       @default(0)
   createdAt     DateTime  @default(now())
+}
+
+model ParentChild {
+  id            String    @id @default(cuid())
+  parentId      String
+  parent        User      @relation("ParentChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  childId       String
+  child         User      @relation("ChildParents", fields: [childId], references: [id], onDelete: Cascade)
+  relationship  String    @default("parent") // parent, guardian, etc.
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([parentId, childId])
+}
+
+model Assignment {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  subjectId     String
+  subject       Subject   @relation(fields: [subjectId], references: [id])
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  teacherId     String
+  teacher       User      @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  totalMarks    Float     @default(100)
+  dueDate       DateTime
+  instructions  String?
+  attachments   String?   // JSON array of file URLs
+  autoGrade     Boolean   @default(false)
+  gradingRubric String?  // JSON grading criteria
+  status        String    @default("active") // active, closed, draft
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  submissions   AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id            String    @id @default(cuid())
+  assignmentId  String
+  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       User      @relation(fields: [studentId], references: [id])
+  content       String?   // Text submission
+  attachments   String?   // JSON array of file URLs
+  submittedAt   DateTime?
+  score         Float?
+  grade         String?
+  feedback      String?
+  autoGraded    Boolean   @default(false)
+  gradedBy      String?
+  gradedAt      DateTime?
+  status        String    @default("pending") // pending, submitted, graded, late
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([assignmentId, studentId])
 }

@@ -71,3 +71,37 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, profession } = body;
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    const user = await prisma.user.update({
+      where: { id },
+      data: { profession },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        profession: true,
+        isActive: true
+      }
+    });
+    
+    return NextResponse.json(user);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to update user' },
+      { status: 500 }
+    );
+  }
+}

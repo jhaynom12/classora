@@ -570,9 +570,21 @@ export default function AdminDashboard() {
                           <td className="p-4 text-gray-300 text-sm">{userItem.joinDate}</td>
                           <td className="p-4 text-gray-300 text-sm">{userItem.lastLogin}</td>
                           <td className="p-4">
-                            <button className="p-1 rounded-lg hover:bg-white/10 transition-colors">
-                              <MoreVertical className="w-4 h-4 text-gray-400" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {userItem.role === 'student' && (
+                                <a 
+                                  href={`/dashboard/student/profile?studentId=${userItem.id}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                  title="View Profile"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </a>
+                              )}
+                              <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                                <MoreVertical className="w-4 h-4 text-gray-400" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

@@ -32,6 +32,8 @@ interface Message {
   senderName: string;
   senderRole: 'student' | 'teacher' | 'parent' | 'admin';
   senderAvatar: string;
+  senderProfession?: string; // Short profession tag like "Dr", "Eng"
+  senderChildrenCount?: number; // Number of children for parents
   content: string;
   timestamp: string;
   read: boolean;
@@ -114,6 +116,34 @@ export default function ChatSystem({ userRole, userId, userName, schoolName }: {
       senderAvatar: 'SA',
       content: 'Reminder: School assembly at 8 AM tomorrow.',
       timestamp: '10:32 AM',
+      read: false,
+      delivered: true,
+      type: 'text'
+    },
+    {
+      id: '3',
+      senderId: 'parent1',
+      senderName: 'Dr. Adeola Johnson',
+      senderRole: 'parent',
+      senderAvatar: 'DA',
+      senderProfession: 'Dr',
+      senderChildrenCount: 2,
+      content: 'Thank you for the update. My children will be there.',
+      timestamp: '10:35 AM',
+      read: true,
+      delivered: true,
+      type: 'text'
+    },
+    {
+      id: '4',
+      senderId: 'parent2',
+      senderName: 'Mr. Bola Williams',
+      senderRole: 'parent',
+      senderAvatar: 'BW',
+      senderProfession: 'Eng',
+      senderChildrenCount: 1,
+      content: 'Good morning everyone! Looking forward to the assembly.',
+      timestamp: '10:37 AM',
       read: false,
       delivered: true,
       type: 'text'
@@ -263,7 +293,23 @@ export default function ChatSystem({ userRole, userId, userName, schoolName }: {
                             : 'bg-white/10 text-gray-200'
                         }`}>
                           {message.senderId !== userId && (
-                            <p className="text-xs opacity-70 mb-1">{message.senderName}</p>
+                            <p className="text-xs opacity-70 mb-1 flex items-center gap-2">
+                              <span>{message.senderName}</span>
+                              {message.senderRole === 'parent' ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-300">
+                                  {message.senderProfession ? `${message.senderProfession} • ${message.senderChildrenCount || 0} child${(message.senderChildrenCount || 0) !== 1 ? 'ren' : ''}` : `Parent • ${message.senderChildrenCount || 0} child${(message.senderChildrenCount || 0) !== 1 ? 'ren' : ''}`}
+                                </span>
+                              ) : (
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                  message.senderRole === 'teacher' ? 'bg-blue-500/20 text-blue-300' :
+                                  message.senderRole === 'admin' ? 'bg-purple-500/20 text-purple-300' :
+                                  'bg-gray-500/20 text-gray-300'
+                                }`}>
+                                  {message.senderRole === 'teacher' ? 'Teacher' :
+                                   message.senderRole === 'admin' ? 'Admin' : 'Student'}
+                                </span>
+                              )}
+                            </p>
                           )}
                           <p className="text-sm">{message.content}</p>
                           <div className={`flex items-center gap-1 mt-1 text-xs ${

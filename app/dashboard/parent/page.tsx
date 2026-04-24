@@ -11,12 +11,13 @@ import {
   Sparkles, Wallet, CreditCard, Phone, Mail, MapPin, School, BookOpen,
   Clock as ClockIcon, DollarSign, Receipt, Calendar as CalendarIcon, Check,
   XCircle, Loader, Send, Paperclip, Smile, MoreVertical, PhoneCall, Video,
-  Star as StarIcon
+  Star as StarIcon, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/components/theme-provider';
 import ActionButtons from '@/app/components/ActionButtons';
 import PerformanceInsights from '@/app/components/PerformanceInsights';
+import AddChildModal from '@/app/components/AddChildModal';
 
 interface Child {
   id: string;
@@ -61,6 +62,50 @@ interface Child {
     status: 'paid' | 'partial' | 'unpaid';
     dueDate: string;
   };
+  results?: {
+    id: string;
+    term: string;
+    academicYear: string;
+    total: number;
+    average: number;
+    grade: string;
+    position?: number;
+    outOf?: number;
+    publishedAt?: string;
+    subjectResults: Record<string, {
+      ca1?: number;
+      ca2?: number;
+      exam?: number;
+      total?: number;
+      grade?: string;
+    }>;
+    teacherComment?: string;
+    principalComment?: string;
+    status: string;
+  }[];
+  achievements?: {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    date: string;
+  }[];
+  exams?: {
+    name: string;
+    subject: string;
+    date: string;
+    time: string;
+    venue: string;
+    topics: string[];
+    status: 'upcoming' | 'completed';
+  }[];
+  assignments?: {
+    name: string;
+    subject: string;
+    dueDate: string;
+    status: 'submitted' | 'pending' | 'late';
+    description: string;
+  }[];
 }
 
 interface Message {
@@ -112,12 +157,14 @@ export default function ParentDashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [selectedChildId, setSelectedChildId] = useState<string>('1');
-
-  // Sample children data
-  const children: Child[] = [
+  const [selectedChildId, setSelectedChildId] = useState<string>('STU001');
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [children, setChildren] = useState<Child[]>([
     {
-      id: '1',
+      id: 'STU001',
       name: 'Adeola K.',
       class: 'SS2 Science',
       avatar: 'AK',
@@ -154,9 +201,128 @@ export default function ParentDashboard() {
         status: 'paid',
         dueDate: '2024-03-30',
       },
+      results: [
+        {
+          id: '1',
+          term: 'First Term',
+          academicYear: '2023/2024',
+          total: 78.5,
+          average: 78.5,
+          grade: 'B+',
+          position: 8,
+          outOf: 45,
+          publishedAt: '2024-01-15',
+          subjectResults: {
+            'Mathematics': { ca1: 25, ca2: 28, exam: 32, total: 85, grade: 'A' },
+            'English': { ca1: 22, ca2: 24, exam: 32, total: 78, grade: 'B+' },
+            'Physics': { ca1: 20, ca2: 22, exam: 30, total: 72, grade: 'B' },
+            'Chemistry': { ca1: 18, ca2: 20, exam: 30, total: 68, grade: 'B-' },
+            'Biology': { ca1: 24, ca2: 26, exam: 32, total: 82, grade: 'A-' },
+          },
+          teacherComment: 'Adeola has shown good progress this term. Focus on Chemistry to improve overall performance.',
+          principalComment: 'Keep up the good work. Consistent effort will lead to better results.',
+          status: 'published',
+        },
+        {
+          id: '2',
+          term: 'Second Term',
+          academicYear: '2023/2024',
+          total: 82.3,
+          average: 82.3,
+          grade: 'A-',
+          position: 5,
+          outOf: 45,
+          publishedAt: '2024-04-15',
+          subjectResults: {
+            'Mathematics': { ca1: 26, ca2: 28, exam: 35, total: 89, grade: 'A' },
+            'English': { ca1: 24, ca2: 25, exam: 34, total: 83, grade: 'A-' },
+            'Physics': { ca1: 22, ca2: 24, exam: 32, total: 78, grade: 'B+' },
+            'Chemistry': { ca1: 20, ca2: 22, exam: 32, total: 74, grade: 'B+' },
+            'Biology': { ca1: 25, ca2: 27, exam: 34, total: 86, grade: 'A' },
+          },
+          teacherComment: 'Excellent improvement in Mathematics and Biology. Keep maintaining this performance.',
+          principalComment: 'Outstanding progress. Continue to work hard.',
+          status: 'published',
+        },
+      ],
+      achievements: [
+        {
+          id: '1',
+          title: 'Mathematics Excellence Award',
+          description: 'Awarded for outstanding performance in Mathematics with 89% average',
+          icon: '🏆',
+          date: '2024-04-15',
+        },
+        {
+          id: '2',
+          title: 'Perfect Attendance',
+          description: 'Achieved 100% attendance for the month of March',
+          icon: '📅',
+          date: '2024-03-31',
+        },
+        {
+          id: '3',
+          title: 'Science Fair Participant',
+          description: 'Participated in the annual Science Fair with innovative Physics project',
+          icon: '🔬',
+          date: '2024-02-20',
+        },
+      ],
+      exams: [
+        {
+          name: 'Third Term Examination',
+          subject: 'Mathematics',
+          date: '2024-05-15',
+          time: '10:00 AM',
+          venue: 'Hall A',
+          topics: ['Algebra', 'Geometry', 'Trigonometry'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Third Term Examination',
+          subject: 'English',
+          date: '2024-05-16',
+          time: '10:00 AM',
+          venue: 'Hall B',
+          topics: ['Literature', 'Grammar', 'Comprehension'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Third Term Examination',
+          subject: 'Physics',
+          date: '2024-05-17',
+          time: '10:00 AM',
+          venue: 'Lab 1',
+          topics: ['Mechanics', 'Electricity', 'Optics'],
+          status: 'upcoming',
+        },
+      ],
+      assignments: [
+        {
+          name: 'Chemistry Lab Report',
+          subject: 'Chemistry',
+          dueDate: '2024-04-20',
+          description: 'Complete lab report on acid-base reactions experiment',
+          status: 'pending',
+        },
+        {
+          name: 'English Literature Essay',
+          subject: 'English',
+          dueDate: '2024-04-18',
+          description: 'Write a 1000-word essay on Shakespeare\'s Macbeth',
+          status: 'submitted',
+        },
+        {
+          name: 'Mathematics Problem Set',
+          subject: 'Mathematics',
+          dueDate: '2024-04-22',
+          description: 'Solve problems 1-20 from chapter 5 on quadratic equations',
+          status: 'pending',
+        },
+      ],
     },
     {
-      id: '2',
+      id: 'STU002',
       name: 'Bola K.',
       class: 'JSS3 Art',
       avatar: 'BK',
@@ -191,20 +357,137 @@ export default function ParentDashboard() {
         status: 'partial',
         dueDate: '2024-04-25',
       },
+      results: [
+        {
+          id: '3',
+          term: 'First Term',
+          academicYear: '2023/2024',
+          total: 85.2,
+          average: 85.2,
+          grade: 'A-',
+          position: 3,
+          outOf: 38,
+          publishedAt: '2024-01-15',
+          subjectResults: {
+            'Mathematics': { ca1: 26, ca2: 28, exam: 34, total: 88, grade: 'A' },
+            'English': { ca1: 24, ca2: 26, exam: 35, total: 85, grade: 'A-' },
+            'Social Studies': { ca1: 22, ca2: 24, exam: 36, total: 82, grade: 'B+' },
+            'Art': { ca1: 28, ca2: 30, exam: 32, total: 90, grade: 'A' },
+          },
+          teacherComment: 'Bola continues to excel in all subjects. Her artistic skills are particularly outstanding.',
+          principalComment: 'Excellent academic performance. A role model for other students.',
+          status: 'published',
+        },
+        {
+          id: '4',
+          term: 'Second Term',
+          academicYear: '2023/2024',
+          total: 87.8,
+          average: 87.8,
+          grade: 'A',
+          position: 2,
+          outOf: 38,
+          publishedAt: '2024-04-15',
+          subjectResults: {
+            'Mathematics': { ca1: 27, ca2: 29, exam: 36, total: 92, grade: 'A' },
+            'English': { ca1: 25, ca2: 27, exam: 36, total: 88, grade: 'A' },
+            'Social Studies': { ca1: 24, ca2: 26, exam: 38, total: 88, grade: 'A' },
+            'Art': { ca1: 29, ca2: 31, exam: 34, total: 94, grade: 'A' },
+          },
+          teacherComment: 'Outstanding performance across all subjects. Bola is a top student.',
+          principalComment: 'Exceptional academic excellence. Keep up the excellent work.',
+          status: 'published',
+        },
+      ],
+      achievements: [
+        {
+          id: '4',
+          title: 'Art Excellence Award',
+          description: 'Awarded for exceptional artistic talent and creativity',
+          icon: '🎨',
+          date: '2024-04-15',
+        },
+        {
+          id: '5',
+          title: 'Academic Excellence',
+          description: 'Maintained A grade average throughout the term',
+          icon: '⭐',
+          date: '2024-04-15',
+        },
+        {
+          id: '6',
+          title: 'Class Representative',
+          description: 'Elected as class representative for leadership qualities',
+          icon: '👑',
+          date: '2024-03-01',
+        },
+      ],
+      exams: [
+        {
+          name: 'Third Term Examination',
+          subject: 'Mathematics',
+          date: '2024-05-15',
+          time: '10:00 AM',
+          venue: 'Hall A',
+          topics: ['Advanced Algebra', 'Calculus', 'Statistics'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Third Term Examination',
+          subject: 'English',
+          date: '2024-05-16',
+          time: '10:00 AM',
+          venue: 'Hall B',
+          topics: ['Advanced Literature', 'Creative Writing', 'Grammar'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Art Practical Examination',
+          subject: 'Art',
+          date: '2024-05-18',
+          time: '9:00 AM',
+          venue: 'Art Studio',
+          topics: ['Painting', 'Sculpture', 'Design'],
+          status: 'upcoming',
+        },
+      ],
+      assignments: [
+        {
+          name: 'Art Portfolio Project',
+          subject: 'Art',
+          dueDate: '2024-04-25',
+          description: 'Complete portfolio with 5 original artworks and artist statement',
+          status: 'pending',
+        },
+        {
+          name: 'Mathematics Research Paper',
+          subject: 'Mathematics',
+          dueDate: '2024-04-20',
+          description: 'Write a 1500-word paper on applications of mathematics in real life',
+          status: 'submitted',
+        },
+        {
+          name: 'English Creative Writing',
+          subject: 'English',
+          dueDate: '2024-04-22',
+          description: 'Write a short story of 2000 words on any theme',
+          status: 'pending',
+        },
+      ],
     },
-  ];
+  ]);
 
   // Sample messages
   const messages: Message[] = [
-    { id: '1', childId: '1', childName: 'Adeola K.', teacher: 'Mrs. Adebayo', message: 'Adeola has been showing great improvement in Mathematics. Keep up the good work at home!', date: '2024-04-14', isFromTeacher: true, read: false },
-    { id: '2', childId: '1', childName: 'Adeola K.', teacher: 'Mrs. Eze', message: 'Please encourage Adeola to practice more chemistry problems.', date: '2024-04-13', isFromTeacher: true, read: true },
-    { id: '3', childId: '2', childName: 'Bola K.', teacher: 'Mrs. Okafor', message: 'Bola is doing exceptionally well in Mathematics!', date: '2024-04-12', isFromTeacher: true, read: false },
+    { id: '1', childId: 'STU001', childName: 'Adeola K.', teacher: 'Mrs. Adebayo', message: 'Adeola has been showing great improvement in Mathematics. Keep up the good work at home!', date: '2024-04-14', isFromTeacher: true, read: false },
+    { id: '2', childId: 'STU001', childName: 'Adeola K.', teacher: 'Mrs. Eze', message: 'Please encourage Adeola to practice more chemistry problems.', date: '2024-04-13', isFromTeacher: true, read: true },
+    { id: '3', childId: 'STU002', childName: 'Bola K.', teacher: 'Mrs. Okafor', message: 'Bola is doing exceptionally well in Mathematics!', date: '2024-04-12', isFromTeacher: true, read: false },
   ];
 
   // Sample payments
   const payments: Payment[] = [
-    { id: '1', childId: '1', childName: 'Adeola K.', amount: 150000, date: '2024-03-25', method: 'Bank Transfer', reference: 'TRX-001234', status: 'success' },
-    { id: '2', childId: '2', childName: 'Bola K.', amount: 100000, date: '2024-03-20', method: 'Card Payment', reference: 'TRX-001235', status: 'success' },
+    { id: '1', childId: 'STU001', childName: 'Adeola K.', amount: 150000, date: '2024-03-25', method: 'Bank Transfer', reference: 'TRX-001234', status: 'success' },
+    { id: '2', childId: 'STU002', childName: 'Bola K.', amount: 100000, date: '2024-03-20', method: 'Card Payment', reference: 'TRX-001235', status: 'success' },
   ];
 
   // Sample announcements
@@ -214,28 +497,89 @@ export default function ParentDashboard() {
     { id: '3', title: 'Fee Payment Deadline', content: 'Second term fees due by April 25th', date: '2024-04-13', author: 'Bursary', priority: 'high' },
   ];
 
+  // Check if device is mobile
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 768);
+  };
+
   useEffect(() => {
     setMounted(true);
     const savedUser = localStorage.getItem('classora_user');
     const savedSchool = localStorage.getItem('classora_school_name');
-    
+
+    console.log('Parent dashboard - savedUser:', savedUser);
+
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        const userData = JSON.parse(savedUser);
+        console.log('Parent dashboard - parsed user:', userData);
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        window.location.href = '/';
+        return;
+      }
     } else {
+      console.log('No saved user found, redirecting to login');
       window.location.href = '/';
+      return;
     }
-    
+
     if (savedSchool) {
       setSchoolName(savedSchool);
     }
 
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    setLoading(false);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (user?.id && children.length > 0) {
+      fetchAssignmentsForChildren();
+    }
+  }, [user, children.length]);
+
+  const fetchAssignmentsForChildren = async () => {
+    if (!user?.id) return;
+
+    setLoadingAssignments(true);
+    try {
+      // Fetch assignments for all children
+      const childrenIds = children.map(child => child.id);
+      const assignmentsPromises = childrenIds.map(async (childId) => {
+        const response = await fetch(`/api/assignments?studentId=${childId}`);
+        if (response.ok) {
+          return { childId, assignments: await response.json() };
+        }
+        return { childId, assignments: [] };
+      });
+
+      const assignmentsResults = await Promise.all(assignmentsPromises);
+      
+      // Update children data with real assignments
+      const updatedChildren = children.map(child => {
+        const childAssignments = assignmentsResults.find(result => result.childId === child.id)?.assignments || [];
+        return {
+          ...child,
+          assignments: childAssignments.map((assignment: any) => ({
+            name: assignment.title,
+            subject: assignment.subject?.name || 'Unknown Subject',
+            dueDate: new Date(assignment.dueDate).toLocaleDateString(),
+            status: assignment.status || 'pending',
+            description: assignment.description || assignment.instructions || 'No description available'
+          }))
+        };
+      });
+
+      setChildren(updatedChildren);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -272,11 +616,47 @@ export default function ParentDashboard() {
   const unreadMessages = messages.filter(m => !m.read).length;
   const totalDue = children.reduce((sum, c) => sum + c.feeStatus.due, 0);
 
-  if (!mounted || !user) return null;
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white text-lg mb-4">No user data found</p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (user.role !== 'parent') {
-    window.location.href = '/';
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white text-lg mb-4">Access denied. This dashboard is for parents only.</p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -337,6 +717,20 @@ export default function ParentDashboard() {
                   </button>
                 ))}
               </div>
+
+              {/* Add Child Button in Mobile Menu */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <button
+                  onClick={() => {
+                    setShowAddChildModal(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Add Child</span>
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -377,6 +771,7 @@ export default function ParentDashboard() {
                   {[
                     { id: 'overview', label: 'Overview' },
                     { id: 'children', label: 'My Children' },
+                    { id: 'assignments', label: 'Assignments' },
                     { id: 'messages', label: 'Messages', badge: unreadMessages },
                     { id: 'payments', label: 'Payments' },
                     { id: 'calendar', label: 'Calendar' },
@@ -401,6 +796,14 @@ export default function ParentDashboard() {
                   {/* FORUM BUTTON IN TOP NAVIGATION */}
                   <button onClick={() => router.push('/dashboard/forum')} className="p-2 rounded-full bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 transition-colors ml-2">
                     <MessageCircle className="w-5 h-5" />
+                  </button>
+                  {/* ADD CHILD BUTTON */}
+                  <button 
+                    onClick={() => setShowAddChildModal(true)}
+                    className="p-2 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors ml-2"
+                    title="Add Child"
+                  >
+                    <Plus className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -540,11 +943,7 @@ export default function ParentDashboard() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1 }}
-                    onClick={() => {
-                      setSelectedChild(child.id);
-                      setActiveTab('children');
-                    }}
-                    className="relative rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 hover:border-emerald-500/30 transition-all cursor-pointer group"
+                    className="relative rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 hover:border-emerald-500/30 transition-all group"
                   >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-2xl" />
                     <div className="p-5 sm:p-6">
@@ -583,16 +982,34 @@ export default function ParentDashboard() {
                       
                       {/* Quick Stats Bar */}
                       <div className="mt-4 pt-4 border-t border-white/10">
-                        <div className="flex justify-between text-xs text-gray-400">
+                        <div className="flex justify-between text-xs text-gray-400 mb-2">
                           <span>Progress</span>
                           <span>{child.averageScore}% to target</span>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-1.5 mt-2">
+                        <div className="w-full bg-white/10 rounded-full h-1.5">
                           <div 
                             className="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
                             style={{ width: `${child.averageScore}%` }}
                           />
                         </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-4 flex gap-2">
+                        <a href={`/dashboard/student/profile?studentId=${child.id}`} className="flex-1 px-3 py-2 text-sm rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-1 font-medium no-underline">
+                          <Eye className="w-4 h-4" />
+                          View Profile
+                        </a>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedChild(child.id);
+                            setActiveTab('children');
+                          }}
+                          className="flex-1 px-3 py-2 text-sm rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors font-medium"
+                        >
+                          Details
+                        </button>
                       </div>
                     </div>
                   </motion.div>
@@ -909,8 +1326,7 @@ export default function ParentDashboard() {
                       key={child.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      onClick={() => setSelectedChild(child.id)}
-                      className="relative rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 hover:border-emerald-500/30 transition-all cursor-pointer group"
+                      className="relative rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 hover:border-emerald-500/30 transition-all group"
                     >
                       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-2xl" />
                       <div className="p-6">
@@ -939,19 +1355,106 @@ export default function ParentDashboard() {
                           </div>
                         </div>
                         
-                        <button className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-colors">
-                                                          <Link href={`/dashboard/student/profile?id=${child.id}`}>
-                                  <button className="mt-3 w-full py-2 rounded-xl bg-purple-500/20 text-purple-400 text-sm hover:bg-purple-500/30 transition-colors">
-                                    View Full Profile →
-                                  </button>
-                                </Link>
-                        </button>
+                        <a href={`/dashboard/student/profile?studentId=${child.id}`} className="mt-3 block w-full py-2 rounded-xl bg-purple-500/20 text-purple-400 text-sm text-center hover:bg-purple-500/30 transition-colors">
+                          View Full Profile →
+                        </a>
                       </div>
                     </motion.div>
                   ))}
                 </div>
               )}
             </div>
+          )}
+
+          {/* Assignments Tab */}
+          {activeTab === 'assignments' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Assignments</h2>
+                  <p className="text-gray-400">Monitor your children's assignment submissions</p>
+                </div>
+                <div className="flex gap-3">
+                  <select className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option>All Children</option>
+                    {children.map(child => (
+                      <option key={child.id}>{child.name}</option>
+                    ))}
+                  </select>
+                  <button className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors">
+                    <Filter className="w-4 h-4 inline mr-2" />
+                    Filter
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {children.map(child => (
+                  <div key={child.id} className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
+                    <div className="p-6 border-b border-white/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold">
+                            {child.avatar}
+                          </div>
+                          <div>
+                            <h3 className="text-white font-semibold">{child.name}</h3>
+                            <p className="text-gray-400 text-sm">{child.class}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white text-sm">{child.assignments?.length || 0} assignments</p>
+                          <p className="text-gray-400 text-xs">
+                            {child.assignments?.filter(a => a.status === 'submitted').length || 0} submitted
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="divide-y divide-white/10">
+                      {child.assignments && child.assignments.length > 0 ? (
+                        child.assignments.map((assignment, index) => (
+                          <div key={index} className="p-6 hover:bg-white/5 transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <h4 className="text-white font-medium">{assignment.name}</h4>
+                                <p className="text-gray-400 text-sm">{assignment.subject}</p>
+                                <p className="text-gray-500 text-xs mt-1">{assignment.description}</p>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="text-gray-400 text-sm">Due: {assignment.dueDate}</p>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    assignment.status === 'submitted' ? 'bg-green-500/20 text-green-400' :
+                                    assignment.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {assignment.status.toUpperCase()}
+                                  </span>
+                                </div>
+                                <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                                  <Eye className="w-4 h-4 text-gray-400" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-6 text-center">
+                          <FileText className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                          <p className="text-gray-400">No assignments found</p>
+                          <p className="text-gray-500 text-sm">Assignments will appear here when teachers create them</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           )}
 
           {/* Messages Tab */}
@@ -1251,6 +1754,19 @@ export default function ParentDashboard() {
           animation: pulse-slow 8s ease-in-out infinite;
         }
       `}</style>
+
+      {/* Add Child Modal */}
+      <AddChildModal
+        isOpen={showAddChildModal}
+        onClose={() => setShowAddChildModal(false)}
+        onChildAdded={(child) => {
+          // Refresh children list or add to local state
+          console.log('Child added:', child);
+          // You could refresh the page or update local state here
+        }}
+        parentId={user?.id || ''}
+      />
+
     </div>
   );
 }

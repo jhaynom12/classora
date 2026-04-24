@@ -102,22 +102,28 @@ export default function SchoolGuardian({ userRole, userName, schoolName }: {
     setMessage('');
     setIsTyping(true);
 
-    // Simulate AI response
+    // Simulate AI response with faster, more accurate responses
     setTimeout(() => {
       let response = '';
-      if (userMessage.toLowerCase().includes('grade') || userMessage.toLowerCase().includes('score')) {
-        response = `Based on the latest assessment data, the class average is 74%. Your child is performing above average in Mathematics and needs improvement in Chemistry. Would you like specific study recommendations?`;
-      } else if (userMessage.toLowerCase().includes('fee') || userMessage.toLowerCase().includes('payment')) {
-        response = `Total outstanding fees: ₦3.5M. The deadline is in 5 days. You can make payments through the Finance section. Would you like me to help you set up a payment reminder?`;
-      } else if (userMessage.toLowerCase().includes('attendance')) {
-        response = `Current attendance rate is 92%. Students with below 75% attendance have been flagged. Would you like to see the detailed attendance report?`;
+      const userMessage = message.toLowerCase();
+      
+      if (userMessage.includes('grade') || userMessage.includes('score') || userMessage.includes('performance')) {
+        response = `Based on the latest assessment data, the class average is 74%. Your child is performing above average in Mathematics and needs improvement in Chemistry. Recommended: Extra practice sessions and tutoring support.`;
+      } else if (userMessage.includes('fee') || userMessage.includes('payment') || userMessage.includes('money')) {
+        response = `Total outstanding fees: ₦3.5M. The deadline is in 5 days. You can make payments through the Finance section. I recommend paying now to avoid late fees.`;
+      } else if (userMessage.includes('attendance') || userMessage.includes('absent')) {
+        response = `Current attendance rate is 92%. Students with below 75% attendance have been flagged. Your child has excellent attendance at 95%.`;
+      } else if (userMessage.includes('exam') || userMessage.includes('test') || userMessage.includes('assessment')) {
+        response = `Next major examination is in 5 days. Your child should focus on Mathematics and English. I've sent study recommendations to their profile.`;
+      } else if (userMessage.includes('teacher') || userMessage.includes('meeting')) {
+        response = `Parent-teacher meetings are scheduled for next week. Your child's teacher is available for discussions about progress and concerns.`;
       } else {
-        response = `I understand you're asking about "${userMessage}". Let me check the system for you. In the meantime, you can check the dashboard for more details. Is there anything specific you'd like to know about?`;
+        response = `I understand you're asking about "${message}". Based on school data, I can help with academic performance, fees, attendance, and scheduling. What specific information do you need?`;
       }
       
       setConversation(prev => [...prev, { role: 'assistant', content: response }]);
       setIsTyping(false);
-    }, 1500);
+    }, 800); // Faster response time
   };
 
   return (

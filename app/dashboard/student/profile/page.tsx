@@ -1,20 +1,157 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Mail, Phone, MapPin, Calendar, Award, Target, TrendingUp,
   Edit, Save, X, Camera, GraduationCap, Star, LogOut, Moon, Sun, ChevronRight,
-  Brain, Sparkles, MessageCircle, Download, CheckCircle, BookOpen, Clock,
+  Brain, Sparkles, MessageCircle, Eye, Download, CheckCircle, BookOpen, Clock,
   Users, Heart, Activity, BarChart3, PieChart, Calendar as CalendarIcon,
-  FileText, AlertCircle, ThumbsUp, Zap, Settings, Bell, CreditCard
+  FileText, AlertCircle, ThumbsUp, Zap, Settings, Bell, CreditCard, Upload
 } from "lucide-react";
 
+const sampleStudentProfiles: Record<string, any> = {
+  STU001: {
+    basic: {
+      id: "STU001",
+      name: "Adeola K.",
+      email: "adeola@classora.com",
+      phone: "+234 802 345 6789",
+      address: "12 Scholar Lane, Lagos, Nigeria",
+      dateOfBirth: "2008-05-15",
+      bloodGroup: "A+",
+      emergencyContact: "+234 803 456 7890",
+      bio: "Passionate about mathematics and science. Aspiring engineer.",
+      class: "SS2 Science",
+      admissionYear: "2023",
+      guardianName: "Mr. & Mrs. K.",
+      guardianPhone: "+234 803 456 7890",
+      guardianEmail: "parent@classora.com"
+    },
+    academic: {
+      subjects: [
+        { name: "Mathematics", score: 85, grade: "A", teacher: "Mrs. Adebayo", attendance: 95, trend: "up" },
+        { name: "English", score: 78, grade: "B+", teacher: "Mr. Johnson", attendance: 92, trend: "stable" },
+        { name: "Physics", score: 72, grade: "B", teacher: "Dr. Okonkwo", attendance: 88, trend: "up" },
+        { name: "Chemistry", score: 68, grade: "B-", teacher: "Mrs. Eze", attendance: 85, trend: "down" },
+        { name: "Biology", score: 82, grade: "A-", teacher: "Prof. Williams", attendance: 96, trend: "up" }
+      ],
+      averageScore: 77,
+      predictedGrade: "B+",
+      classRank: 8,
+      totalStudents: 45,
+      attendance: 93,
+      studyStreak: 15,
+      achievements: 8
+    },
+    exams: [
+      { name: "Mid-Term Examination", subject: "Mathematics", date: "2024-04-20", time: "10:00 AM", venue: "Hall A", status: "upcoming" },
+      { name: "Practical Test", subject: "Physics", date: "2024-04-22", time: "2:00 PM", venue: "Lab 2", status: "upcoming" },
+      { name: "Essay Writing", subject: "English", date: "2024-04-25", time: "9:00 AM", venue: "Hall B", status: "upcoming" }
+    ],
+    assignments: [
+      { name: "Algebra Worksheet", subject: "Mathematics", dueDate: "2024-04-18", status: "pending", description: "Complete questions 1-15" },
+      { name: "Lab Report", subject: "Chemistry", dueDate: "2024-04-19", status: "pending", description: "Write up titration experiment" },
+      { name: "Essay: Climate Change", subject: "English", dueDate: "2024-04-17", status: "submitted", description: "500-word essay" }
+    ],
+    achievementsList: [
+      { title: "Top Performer - Mathematics", date: "March 2024", icon: "🏆" },
+      { title: "Perfect Attendance", date: "February 2024", icon: "⭐" },
+      { title: "Science Quiz Winner", date: "January 2024", icon: "🔬" }
+    ],
+    reportCards: [
+      {
+        id: "rc1",
+        title: "First Term Report Card",
+        fileType: "application/pdf",
+        uploadedAt: "2024-01-15",
+        uploadedBy: "Admin",
+        summary: "Academic performance and term summary",
+      },
+      {
+        id: "rc2",
+        title: "Second Term Report Card",
+        fileType: "text/csv",
+        uploadedAt: "2024-04-15",
+        uploadedBy: "Admin",
+        summary: "Term scores and subject breakdown",
+      }
+    ]
+  },
+  STU002: {
+    basic: {
+      id: "STU002",
+      name: "Bola K.",
+      email: "bola@classora.com",
+      phone: "+234 803 456 7890",
+      address: "45 Creative Avenue, Lagos, Nigeria",
+      dateOfBirth: "2009-02-12",
+      bloodGroup: "O+",
+      emergencyContact: "+234 803 456 7891",
+      bio: "Creative thinker with top scores in arts and humanities.",
+      class: "JSS3 Art",
+      admissionYear: "2022",
+      guardianName: "Mrs. K.",
+      guardianPhone: "+234 803 456 7891",
+      guardianEmail: "parent2@classora.com"
+    },
+    academic: {
+      subjects: [
+        { name: "Mathematics", score: 88, grade: "A", teacher: "Mrs. Okafor", attendance: 98, trend: "up" },
+        { name: "English", score: 85, grade: "A-", teacher: "Mr. Adele", attendance: 96, trend: "up" },
+        { name: "Social Studies", score: 82, grade: "B+", teacher: "Mr. Musa", attendance: 94, trend: "stable" },
+        { name: "Art", score: 90, grade: "A", teacher: "Mrs. Ibrahim", attendance: 99, trend: "up" }
+      ],
+      averageScore: 86,
+      predictedGrade: "A",
+      classRank: 3,
+      totalStudents: 38,
+      attendance: 97,
+      studyStreak: 18,
+      achievements: 10
+    },
+    exams: [
+      { name: "Third Term Examination", subject: "Mathematics", date: "2024-05-15", time: "10:00 AM", venue: "Hall A", status: "upcoming" },
+      { name: "Art Practical Examination", subject: "Art", date: "2024-05-18", time: "9:00 AM", venue: "Art Studio", status: "upcoming" },
+      { name: "English Literature Test", subject: "English", date: "2024-05-16", time: "10:00 AM", venue: "Hall B", status: "upcoming" }
+    ],
+    assignments: [
+      { name: "Art Portfolio Project", subject: "Art", dueDate: "2024-04-25", status: "pending", description: "Complete portfolio with 5 original artworks" },
+      { name: "Mathematics Research Paper", subject: "Mathematics", dueDate: "2024-04-20", status: "submitted", description: "Write a 1500-word paper on real-life applications" },
+      { name: "English Creative Writing", subject: "English", dueDate: "2024-04-22", status: "pending", description: "Write a short story of 2000 words" }
+    ],
+    achievementsList: [
+      { title: "Art Excellence Award", date: "April 2024", icon: "🎨" },
+      { title: "Academic Excellence", date: "April 2024", icon: "⭐" },
+      { title: "Class Representative", date: "March 2024", icon: "👑" }
+    ],
+    reportCards: [
+      {
+        id: "rc3",
+        title: "First Term Report Card",
+        fileType: "application/pdf",
+        uploadedAt: "2024-01-15",
+        uploadedBy: "Admin",
+        summary: "Scores, attendance and subject feedback",
+      },
+      {
+        id: "rc4",
+        title: "Second Term Report Card",
+        fileType: "text/csv",
+        uploadedAt: "2024-04-15",
+        uploadedBy: "Admin",
+        summary: "Fresh term report with CSV download option",
+      }
+    ]
+  }
+};
+
 export default function StudentProfile() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
-  const [viewingStudentId, setViewingStudentId] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState("Your School");
   const [editing, setEditing] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -22,6 +159,13 @@ export default function StudentProfile() {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [viewerRole, setViewerRole] = useState<string>("");
+  const [reportCards, setReportCards] = useState<any[]>([]);
+  const [previewReportCardUrl, setPreviewReportCardUrl] = useState<string | null>(null);
+  const [previewReportCardType, setPreviewReportCardType] = useState<string | null>(null);
+  const [previewReportCardTitle, setPreviewReportCardTitle] = useState<string | null>(null);
+  const [uploadedReportFile, setUploadedReportFile] = useState<File | null>(null);
+  const [reportUploadName, setReportUploadName] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Student data - will come from API/database
   const [studentData, setStudentData] = useState<any>({
@@ -84,16 +228,47 @@ export default function StudentProfile() {
     const savedSchool = localStorage.getItem("classora_school_name");
     const savedAvatar = localStorage.getItem("student_avatar");
     const savedTheme = localStorage.getItem("classora-theme");
+    const queryStudentId = searchParams.get("studentId");
     
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
       setViewerRole(parsedUser.role);
-      setStudentData((prev: any) => ({
-        ...prev,
-        name: parsedUser.name,
-        email: parsedUser.email || "student@classora.com"
-      }));
+      if (queryStudentId && sampleStudentProfiles[queryStudentId]) {
+        const profile = sampleStudentProfiles[queryStudentId];
+        setSelectedStudentId(queryStudentId);
+        setStudentData(profile.basic);
+        setAcademicData(profile.academic);
+        setExams(profile.exams);
+        setAssignments(profile.assignments);
+        setAchievements(profile.achievementsList);
+        setReportCards(profile.reportCards);
+      } else if (parsedUser.role === "student" && sampleStudentProfiles[parsedUser.id]) {
+        const profile = sampleStudentProfiles[parsedUser.id];
+        setSelectedStudentId(parsedUser.id);
+        setStudentData(profile.basic);
+        setAcademicData(profile.academic);
+        setExams(profile.exams);
+        setAssignments(profile.assignments);
+        setAchievements(profile.achievementsList);
+        setReportCards(profile.reportCards);
+      } else {
+        const profile = sampleStudentProfiles[queryStudentId ?? "STU001"] || sampleStudentProfiles.STU001;
+        setSelectedStudentId(queryStudentId || "STU001");
+        setStudentData(profile.basic);
+        setAcademicData(profile.academic);
+        setExams(profile.exams);
+        setAssignments(profile.assignments);
+        setAchievements(profile.achievementsList);
+        setReportCards(profile.reportCards);
+      }
+      if (!queryStudentId && parsedUser.role === "student") {
+        setStudentData((prev: any) => ({
+          ...prev,
+          name: parsedUser.name,
+          email: parsedUser.email || prev.email || "student@classora.com"
+        }));
+      }
     } else {
       window.location.href = "/";
     }
@@ -101,7 +276,7 @@ export default function StudentProfile() {
     if (savedSchool) setSchoolName(savedSchool);
     if (savedAvatar) setAvatar(savedAvatar);
     if (savedTheme === "light") setTheme("light");
-  }, []);
+  }, [searchParams]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -127,6 +302,74 @@ export default function StudentProfile() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleReportCardUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedReportFile(file);
+      setReportUploadName(file.name);
+    }
+  };
+
+  const createReportCardBlob = (card: any) => {
+    if (card.file instanceof File) {
+      return card.file;
+    }
+
+    const content = card.fileType === "text/csv"
+      ? "Subject,Score,Grade\nMathematics,85,A\nEnglish,78,B+\nPhysics,72,B\nChemistry,68,B-\nBiology,82,A-"
+      : `Classora Report Card\nStudent: ${studentData.name}\nProfile: ${card.title}\nGrade: ${academicData.predictedGrade}\nAverage: ${academicData.averageScore}%\n`;
+
+    return new Blob([content], { type: card.fileType || "application/pdf" });
+  };
+
+  const downloadReportCard = (card: any) => {
+    const blob = createReportCardBlob(card);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${card.title}.${card.fileType === "text/csv" ? "csv" : "pdf"}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const openReportCard = (card: any) => {
+    if (previewReportCardUrl) {
+      URL.revokeObjectURL(previewReportCardUrl);
+    }
+
+    const blob = createReportCardBlob(card);
+    const url = URL.createObjectURL(blob);
+    setPreviewReportCardUrl(url);
+    setPreviewReportCardType(card.fileType || "application/pdf");
+    setPreviewReportCardTitle(card.title);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewReportCardUrl) {
+        URL.revokeObjectURL(previewReportCardUrl);
+      }
+    };
+  }, [previewReportCardUrl]);
+
+  const saveReportCard = () => {
+    if (!uploadedReportFile) return;
+    const newCard = {
+      id: `rc-${Date.now()}`,
+      title: reportUploadName || uploadedReportFile.name,
+      fileType: uploadedReportFile.type || "application/pdf",
+      uploadedAt: new Date().toISOString().split("T")[0],
+      uploadedBy: user?.name || "Admin",
+      summary: "Uploaded report card for student profile",
+      file: uploadedReportFile,
+    };
+    setReportCards((prev) => [newCard, ...prev]);
+    setUploadedReportFile(null);
+    setReportUploadName("");
   };
 
   const handleSave = () => {
@@ -263,6 +506,9 @@ export default function StudentProfile() {
           <button onClick={() => setActiveTab("academic")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "academic" ? "bg-purple-500/20 text-purple-400 border border-purple-500/30" : "text-gray-400 hover:text-white"}`}>
             Academic
           </button>
+          <button onClick={() => setActiveTab("reports")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "reports" ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30" : "text-gray-400 hover:text-white"}`}>
+            Report Cards
+          </button>
           <button onClick={() => setActiveTab("exams")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "exams" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "text-gray-400 hover:text-white"}`}>
             Exams & Assignments
           </button>
@@ -388,6 +634,104 @@ export default function StudentProfile() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Report Cards Tab */}
+        {activeTab === "reports" && (
+          <div className="space-y-6">
+            <div className="bg-white/5 rounded-2xl p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Report Cards</h2>
+                  <p className="text-gray-400 text-sm">Download report cards for this student. Admins can upload new files.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 text-sm flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Upload Report
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="application/pdf,text/csv" onChange={handleReportCardUpload} className="hidden" />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {reportCards.map((card) => (
+                  <div key={card.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <p className="text-white font-semibold">{card.title}</p>
+                      <p className="text-gray-400 text-sm">{card.uploadedAt} • {card.uploadedBy} • {card.fileType === "text/csv" ? "CSV" : "PDF"}</p>
+                      <p className="text-gray-500 text-xs mt-2">{card.summary}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => openReportCard(card)} className="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 text-sm flex items-center gap-2">
+                        <Eye className="w-4 h-4" /> View
+                      </button>
+                      <button onClick={() => downloadReportCard(card)} className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-sm flex items-center gap-2">
+                        <Download className="w-4 h-4" /> Download
+                      </button>
+                      {viewerRole === "admin" && (
+                        <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 rounded-xl bg-white/5 text-white text-sm border border-white/10 hover:bg-white/10">
+                          Replace
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {viewerRole === "admin" && uploadedReportFile && (
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-2">Ready to upload</h3>
+                <p className="text-gray-400 text-sm mb-4">Selected file: <span className="text-white">{uploadedReportFile.name}</span></p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={saveReportCard} className="px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm">Save Report Card</button>
+                  <button onClick={() => { setUploadedReportFile(null); setReportUploadName(""); }} className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 text-sm">Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {previewReportCardUrl && (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            >
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 16, opacity: 0 }}
+                className="w-full max-w-5xl h-[85vh] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 shadow-2xl"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 bg-slate-900 px-4 py-3">
+                  <div>
+                    <p className="text-sm text-gray-400">Viewing report card</p>
+                    <h3 className="text-lg font-semibold text-white">{previewReportCardTitle}</h3>
+                  </div>
+                  <button onClick={() => {
+                    if (previewReportCardUrl) {
+                      URL.revokeObjectURL(previewReportCardUrl);
+                    }
+                    setPreviewReportCardUrl(null);
+                    setPreviewReportCardType(null);
+                    setPreviewReportCardTitle(null);
+                  }} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10">
+                    Close
+                  </button>
+                </div>
+                <div className="h-full bg-[#0f172a]">
+                  <iframe
+                    src={previewReportCardUrl}
+                    title={previewReportCardTitle || 'Report Card Preview'}
+                    className="h-full w-full border-none bg-white"
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
         )}
 
         {/* Exams & Assignments Tab */}

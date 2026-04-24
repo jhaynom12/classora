@@ -9,11 +9,11 @@ const publicRoutes = ['/', '/api/auth/login', '/api/auth/register', '/api/seed']
 
 // Role-based route access
 const roleRoutes: { [key: string]: string[] } = {
-  admin: ['/dashboard/admin', '/api/admin'],
-  teacher: ['/dashboard/teacher', '/api/teacher'],
-  parent: ['/dashboard/parent', '/api/parent'],
+  admin: ['/dashboard/admin', '/dashboard/student', '/api/admin', '/api/bulk'],
+  teacher: ['/dashboard/teacher', '/dashboard/student', '/api/teacher', '/api/bulk'],
+  parent: ['/dashboard/parent', '/dashboard/student', '/api/parent'],
   student: ['/dashboard/student', '/api/student'],
-  hod: ['/dashboard/hod', '/api/hod']
+  hod: ['/dashboard/hod', '/api/hod', '/api/bulk']
 };
 
 // Shared authenticated dashboard routes available to all roles
