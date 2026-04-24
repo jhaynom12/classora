@@ -63,6 +63,11 @@ const roles = [
 
 export default function SuperAdminLogin() {
   const router = useRouter();
+  
+  // Read role from query parameter on every render
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const roleFromUrl = (urlParams.get('role') as Role | null) || null;
+  
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -77,8 +82,7 @@ export default function SuperAdminLogin() {
   useEffect(() => {
     setMounted(true);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const roleFromUrl = urlParams.get('role') as Role | null;
+    // Sync selectedRole with URL parameter
     if (roleFromUrl && roles.some((role) => role.id === roleFromUrl)) {
       setSelectedRole(roleFromUrl);
     } else {
@@ -96,7 +100,7 @@ export default function SuperAdminLogin() {
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [roleFromUrl]);
 
   if (!mounted) return null;
 
