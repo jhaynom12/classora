@@ -22,7 +22,17 @@ import { useTheme } from '@/components/theme-provider';
 
 type Role = 'superadmin' | 'superadmin-assistant' | 'marketing' | 'customer-care';
 
-const roles = [
+type RoleCard = {
+  id: Role;
+  name: string;
+  icon: typeof Shield;
+  gradient: string;
+  glow: string;
+  color: string;
+  description: string;
+};
+
+const roles: RoleCard[] = [
   {
     id: 'superadmin',
     name: 'Super Admin',
@@ -63,11 +73,6 @@ const roles = [
 
 export default function SuperAdminLogin() {
   const router = useRouter();
-  
-  // Read role from query parameter on every render
-  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
-  const roleFromUrl = (urlParams.get('role') as Role | null) || null;
-  
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -82,11 +87,10 @@ export default function SuperAdminLogin() {
   useEffect(() => {
     setMounted(true);
 
-    // Sync selectedRole with URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleFromUrl = urlParams.get('role') as Role | null;
     if (roleFromUrl && roles.some((role) => role.id === roleFromUrl)) {
       setSelectedRole(roleFromUrl);
-    } else {
-      setSelectedRole(null);
     }
 
     const savedUser = localStorage.getItem('classora_user');
@@ -100,7 +104,7 @@ export default function SuperAdminLogin() {
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [roleFromUrl]);
+  }, []);
 
   if (!mounted) return null;
 
@@ -239,6 +243,7 @@ export default function SuperAdminLogin() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
+                      setSelectedRole(role.id);
                       router.push(`/super-admin/login?role=${role.id}`);
                       setError('');
                       setUsername('');
