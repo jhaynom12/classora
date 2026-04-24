@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Mail, Phone, MapPin, Calendar, Award, Target, TrendingUp,
@@ -149,7 +148,7 @@ const sampleStudentProfiles: Record<string, any> = {
 };
 
 export default function StudentProfile() {
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
   const [user, setUser] = useState<any>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState("Your School");
@@ -224,11 +223,12 @@ export default function StudentProfile() {
 
   useEffect(() => {
     setMounted(true);
+    setSearchParams(new URLSearchParams(window.location.search));
     const savedUser = localStorage.getItem("classora_user");
     const savedSchool = localStorage.getItem("classora_school_name");
     const savedAvatar = localStorage.getItem("student_avatar");
     const savedTheme = localStorage.getItem("classora-theme");
-    const queryStudentId = searchParams.get("studentId");
+    const queryStudentId = searchParams?.get("studentId");
     
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
