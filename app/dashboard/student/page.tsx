@@ -69,38 +69,16 @@ export default function StudentDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [assignments, setAssignments] = useState<Assignment[]>([
-    { name: "Algebra Worksheet", subject: "Mathematics", dueDate: "2024-04-18", status: "pending", description: "Complete questions 1-15 on quadratic equations" },
-    { name: "Lab Report", subject: "Chemistry", dueDate: "2024-04-19", status: "pending", description: "Write up the acid-base titration experiment" },
-    { name: "Essay: Climate Change", subject: "English", dueDate: "2024-04-17", status: "submitted", description: "500-word essay on climate impact" },
-  ]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
 
-  const subjects: Subject[] = [
-    { name: "Mathematics", score: 85, grade: "A", trend: "up", teacher: "Mrs. Adebayo", remark: "Excellent progress in algebra", improvement: 8 },
-    { name: "English", score: 78, grade: "B+", trend: "stable", teacher: "Mr. Johnson", remark: "Good performance in literature", improvement: 2 },
-    { name: "Physics", score: 72, grade: "B", trend: "up", teacher: "Dr. Okonkwo", remark: "Improved in mechanics", improvement: 5 },
-    { name: "Chemistry", score: 68, grade: "B-", trend: "down", teacher: "Mrs. Eze", remark: "Need focus on organic chemistry", improvement: -4 },
-    { name: "Biology", score: 82, grade: "A-", trend: "up", teacher: "Prof. Williams", remark: "Excellent in practicals", improvement: 7 },
-  ];
+  const subjects: Subject[] = [];
 
-  const exams: Exam[] = [
-    { name: "Mid-Term Examination", subject: "Mathematics", date: "2024-04-20", time: "10:00 AM", venue: "Hall A", topics: ["Algebra", "Trigonometry", "Calculus"] },
-    { name: "Practical Test", subject: "Physics", date: "2024-04-22", time: "2:00 PM", venue: "Lab 2", topics: ["Mechanics", "Electricity", "Optics"] },
-    { name: "Essay Writing", subject: "English", date: "2024-04-25", time: "9:00 AM", venue: "Hall B", topics: ["Composition", "Comprehension", "Summary"] },
-  ];
+  const exams: Exam[] = [];
 
-  const announcements: Announcement[] = [
-    { id: "1", title: "School Assembly", content: "All students must attend the assembly on Friday at 8 AM", date: "2024-04-15", author: "Principal", priority: "high" },
-    { id: "2", title: "Mid-Term Break", content: "School will be closed from April 25th to April 30th", date: "2024-04-14", author: "Admin", priority: "medium" },
-    { id: "3", title: "Science Fair", content: "Register for the annual science fair by April 20th", date: "2024-04-13", author: "Science Dept", priority: "high" },
-  ];
+  const announcements: Announcement[] = [];
 
-  const achievements: Achievement[] = [
-    { id: "1", title: "Top Performer - Mathematics", description: "Highest score in class test", date: "2024-04-01", icon: "🏆" },
-    { id: "2", title: "Perfect Attendance", description: "100% attendance for March", date: "2024-03-31", icon: "⭐" },
-    { id: "3", title: "Science Quiz Winner", description: "First place in inter-class competition", date: "2024-03-25", icon: "🔬" },
-  ];
+  const achievements: Achievement[] = [];
 
   useEffect(() => {
     setMounted(true);

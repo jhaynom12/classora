@@ -97,42 +97,18 @@ export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [marksheetData, setMarksheetData] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  // Sample classes data
-  const classes: Class[] = [
-    {
-      id: '1',
-      name: 'SS2 Science',
-      subject: 'Mathematics',
-      students: [
-        { id: '1', name: 'Adeola K.', admissionNo: 'STU001', avatar: 'AK', scores: { test1: 85, test2: 82, exam: 88, total: 85, grade: 'A' }, attendance: 95, parentContact: '+234 802 345 6789', parentEmail: 'parent.adeola@email.com' },
-        { id: '2', name: 'Bola T.', admissionNo: 'STU002', avatar: 'BT', scores: { test1: 72, test2: 75, exam: 70, total: 72, grade: 'B' }, attendance: 88, parentContact: '+234 803 456 7890', parentEmail: 'parent.bola@email.com' },
-        { id: '3', name: 'Chidi O.', admissionNo: 'STU003', avatar: 'CO', scores: { test1: 45, test2: 50, exam: 48, total: 48, grade: 'C' }, attendance: 70, parentContact: '+234 804 567 8901', parentEmail: 'parent.chidi@email.com' },
-        { id: '4', name: 'David E.', admissionNo: 'STU004', avatar: 'DE', scores: { test1: 68, test2: 72, exam: 65, total: 68, grade: 'B-' }, attendance: 92, parentContact: '+234 805 678 9012', parentEmail: 'parent.david@email.com' },
-        { id: '5', name: 'Esther N.', admissionNo: 'STU005', avatar: 'EN', scores: { test1: 92, test2: 88, exam: 94, total: 91, grade: 'A+' }, attendance: 98, parentContact: '+234 806 789 0123', parentEmail: 'parent.esther@email.com' },
-      ],
-      averageScore: 73,
-      topPerformer: 'Esther N.',
-      atRisk: 1,
-    },
-    {
-      id: '2',
-      name: 'SS2 Art',
-      subject: 'Mathematics',
-      students: [
-        { id: '6', name: 'Faith A.', admissionNo: 'STU006', avatar: 'FA', scores: { test1: 78, test2: 82, exam: 80, total: 80, grade: 'A-' }, attendance: 94, parentContact: '+234 807 890 1234', parentEmail: 'parent.faith@email.com' },
-        { id: '7', name: 'George O.', admissionNo: 'STU007', avatar: 'GO', scores: { test1: 65, test2: 68, exam: 62, total: 65, grade: 'B' }, attendance: 85, parentContact: '+234 808 901 2345', parentEmail: 'parent.george@email.com' },
-      ],
-      averageScore: 72,
-      topPerformer: 'Faith A.',
-      atRisk: 0,
-    },
-  ];
+  // Sample classes data (fallback when no data is fetched)
+  const sampleClasses: Class[] = classes.length > 0 ? classes : [];
 
   // Sample assignments - will be replaced with API call
   const [assignments, setAssignments] = useState<Assignment[]>([
@@ -177,6 +153,8 @@ export default function TeacherDashboard() {
   useEffect(() => {
     if (user?.id) {
       fetchAssignments();
+      fetchClasses();
+      fetchStudents();
     }
   }, [user]);
 
@@ -245,9 +223,73 @@ export default function TeacherDashboard() {
     }
   };
 
+  const fetchClasses = async () => {
+    if (!user?.schoolId) return;
+
+    setLoadingClasses(true);
+    try {
+      const response = await fetch(`/api/classes?schoolId=${user.schoolId}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Transform API data to match component interface
+        const transformedClasses = data.map((cls: any) => ({
+          id: cls.id,
+          name: `${cls.name} ${cls.section}`,
+          subject: 'Multiple Subjects', // We'll need to get this from class subjects
+          students: cls.enrollments.map((enrollment: any) => ({
+            id: enrollment.student.id,
+            name: enrollment.student.name,
+            admissionNo: enrollment.student.studentId || 'N/A',
+            avatar: enrollment.student.name.split(' ').map((n: string) => n[0]).join(''),
+            scores: { test1: 0, test2: 0, exam: 0, total: 0, grade: 'N/A' }, // We'll need to fetch marks
+            attendance: 0, // We'll need to calculate this
+            parentContact: 'N/A', // We'll need to get parent contact
+            parentEmail: 'N/A'
+          })),
+          averageScore: 0, // Calculate from student scores
+          topPerformer: 'N/A', // Calculate from student scores
+          atRisk: 0 // Calculate from student scores
+        }));
+        setClasses(transformedClasses);
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
+
+  const fetchStudents = async () => {
+    if (!user?.schoolId) return;
+
+    setLoadingStudents(true);
+    try {
+      const response = await fetch(`/api/users?schoolId=${user.schoolId}&role=student`);
+      if (response.ok) {
+        const data = await response.json();
+        // Transform API data to match component interface
+        const transformedStudents = data.map((student: any) => ({
+          id: student.id,
+          name: student.name,
+          admissionNo: student.studentId || 'N/A',
+          avatar: student.name.split(' ').map((n: string) => n[0]).join(''),
+          scores: { test1: 0, test2: 0, exam: 0, total: 0, grade: 'N/A' },
+          attendance: 0,
+          parentContact: 'N/A',
+          parentEmail: 'N/A'
+        }));
+        setStudents(transformedStudents);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
   const getUnreadMessages = () => messages.filter((m) => !m.read).length;
-  const getTotalStudents = () => classes.reduce((sum, c) => sum + c.students.length, 0);
-  const getAtRiskStudents = () => classes.reduce((sum, c) => sum + c.atRisk, 0);
+  const getTotalStudents = () => sampleClasses.reduce((sum, c) => sum + c.students.length, 0);
+  const getAtRiskStudents = () => sampleClasses.reduce((sum, c) => sum + c.atRisk, 0);
 
   const availableSubjects = Array.from(new Set(classes.map((c) => c.subject)));
 
@@ -297,7 +339,7 @@ export default function TeacherDashboard() {
     return null;
   }
 
-  const selectedClassData = classes.find(c => c.id === selectedClass);
+  const selectedClassData = sampleClasses.find(c => c.id === selectedClass);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -496,7 +538,7 @@ export default function TeacherDashboard() {
                   <div className="p-2 sm:p-3 rounded-xl bg-blue-500/20">
                     <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                   </div>
-                  <span className="text-xl sm:text-2xl font-bold text-white">{classes.length}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-white">{sampleClasses.length}</span>
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm">Classes</p>
                 <p className="text-white/60 text-xs mt-1">Active classes</p>
@@ -899,7 +941,7 @@ export default function TeacherDashboard() {
               ) : (
                 // All Classes Grid
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {classes.map((classItem) => (
+                  {sampleClasses.map((classItem) => (
                     <motion.div
                       key={classItem.id}
                       initial={{ opacity: 0, scale: 0.9 }}

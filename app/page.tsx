@@ -216,13 +216,6 @@ export default function LandingPage() {
               transition={{ duration: 0.5, type: 'spring' }}
               className="w-full max-w-2xl"
             >
-              {/* Modal Background Overlay */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-              />
-
               {/* Modal Card */}
               <div className="relative z-50 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-3xl p-8 md:p-12 shadow-2xl">
                 {/* Shimmer effect */}

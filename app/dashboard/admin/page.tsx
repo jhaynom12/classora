@@ -93,49 +93,125 @@ export default function AdminDashboard() {
   const [showUploadMarksheet, setShowUploadMarksheet] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [fetchedStats, setFetchedStats] = useState<SchoolStats | null>(null);
+  const [fetchedClasses, setFetchedClasses] = useState<ClassData[]>([]);
+  const [fetchedUsers, setFetchedUsers] = useState<UserData[]>([]);
+  const [fetchedFeeStructures, setFetchedFeeStructures] = useState<FeeStructure[]>([]);
+  const [showAddFeeStructure, setShowAddFeeStructure] = useState(false);
+  
+  // Form state for dynamic visibility
+  const [selectedAssignmentMethod, setSelectedAssignmentMethod] = useState('');
+  const [selectedStudentMethod, setSelectedStudentMethod] = useState('');
+  const [selectedParentMethod, setSelectedParentMethod] = useState('');
 
-  const stats: SchoolStats = {
-    totalStudents: 1247, totalTeachers: 48, totalStaff: 32, totalParents: 1890,
-    totalClasses: 32, totalSubjects: 24, averageAttendance: 92, averageScore: 74.5,
-    revenue: { total: 25000000, collected: 21500000, pending: 3500000 },
-    activeUsers: 342, systemHealth: 98,
+  const defaultStats: SchoolStats = {
+    totalStudents: 0, totalTeachers: 0, totalStaff: 0, totalParents: 0,
+    totalClasses: 0, totalSubjects: 0, averageAttendance: 0, averageScore: 0,
+    revenue: { total: 0, collected: 0, pending: 0 },
+    activeUsers: 0, systemHealth: 100
   };
 
-  const users: UserData[] = [
-    { id: '1', name: 'Adeola K.', email: 'adeola@school.com', role: 'student', status: 'active', joinDate: '2024-01-15', lastLogin: '2024-04-14', avatar: 'AK' },
-    { id: '2', name: 'Mrs. Adebayo', email: 'adebayo@school.com', role: 'teacher', status: 'active', joinDate: '2023-09-01', lastLogin: '2024-04-14', avatar: 'MA' },
-    { id: '3', name: 'Mr. Okafor', email: 'okafor@school.com', role: 'parent', status: 'active', joinDate: '2024-01-20', lastLogin: '2024-04-13', avatar: 'MO' },
-    { id: '4', name: 'John Staff', email: 'john@school.com', role: 'staff', status: 'inactive', joinDate: '2023-11-10', lastLogin: '2024-04-10', avatar: 'JS' },
-    { id: '5', name: 'Admin User', email: 'admin@school.com', role: 'hod', status: 'active', joinDate: '2023-08-01', lastLogin: '2024-04-14', avatar: 'AU' },
-  ];
+  const stats = fetchedStats || defaultStats;
 
-  const classes: ClassData[] = [
-    { id: '1', name: 'SS1', section: 'Science', students: 45, teacher: 'Mrs. Adebayo', averageScore: 76, status: 'active' },
-    { id: '2', name: 'SS1', section: 'Art', students: 38, teacher: 'Mr. Johnson', averageScore: 72, status: 'active' },
-    { id: '3', name: 'SS2', section: 'Science', students: 42, teacher: 'Dr. Okonkwo', averageScore: 74, status: 'active' },
-    { id: '4', name: 'SS2', section: 'Art', students: 35, teacher: 'Mrs. Eze', averageScore: 70, status: 'active' },
-    { id: '5', name: 'SS3', section: 'Science', students: 40, teacher: 'Prof. Williams', averageScore: 78, status: 'active' },
-  ];
+  const fetchStats = async () => {
+    if (!user?.schoolId) return;
 
-  const feeStructure: FeeStructure[] = [
-    { id: '1', className: 'SS1', amount: 150000, term: 'First Term', academicYear: '2024/2025', dueDate: '2024-04-30' },
-    { id: '2', className: 'SS1', amount: 150000, term: 'Second Term', academicYear: '2024/2025', dueDate: '2024-08-31' },
-    { id: '3', className: 'SS2', amount: 150000, term: 'First Term', academicYear: '2024/2025', dueDate: '2024-04-30' },
-  ];
+    setLoadingStats(true);
+    try {
+      // Fetch classes for stats
+      const classesResponse = await fetch(`/api/classes?schoolId=${user.schoolId}`);
+      const classesData = classesResponse.ok ? await classesResponse.json() : [];
 
-  const activities: Activity[] = [
-    { id: '1', user: 'Admin', action: 'Added new teacher', details: 'Mrs. Adebayo added as Mathematics teacher', date: '2024-04-14 10:30 AM', type: 'user' },
-    { id: '2', user: 'System', action: 'Fee payment received', details: '₦150,000 from Adeola K. - First Term fees', date: '2024-04-14 09:15 AM', type: 'payment' },
-    { id: '3', user: 'Admin', action: 'Updated school settings', details: 'School name changed to St. Mary\'s High School', date: '2024-04-13 04:20 PM', type: 'system' },
-    { id: '4', user: 'System', action: 'AI model updated', details: 'Grade prediction model retrained with new data', date: '2024-04-13 02:00 PM', type: 'system' },
-  ];
+      // Fetch users for stats
+      const usersResponse = await fetch(`/api/users?schoolId=${user.schoolId}`);
+      const usersData = usersResponse.ok ? await usersResponse.json() : [];
 
-  const systemLogs: SystemLog[] = [
-    { id: '1', level: 'info', message: 'System backup completed successfully', source: 'Backup Service', timestamp: '2024-04-14 03:00 AM' },
-    { id: '2', level: 'warning', message: 'High CPU usage detected (85%)', source: 'Monitoring', timestamp: '2024-04-13 02:30 PM' },
-    { id: '3', level: 'error', message: 'Failed to sync offline CBT data', source: 'Sync Service', timestamp: '2024-04-13 11:45 AM' },
-    { id: '4', level: 'info', message: 'New user registered: Adeola K.', source: 'Auth Service', timestamp: '2024-04-12 09:20 AM' },
-  ];
+      // Calculate stats from API data
+      const totalStudents = usersData.filter((u: any) => u.role === 'student').length;
+      const totalTeachers = usersData.filter((u: any) => u.role === 'teacher').length;
+      const totalStaff = usersData.filter((u: any) => u.role === 'staff').length;
+      const totalParents = usersData.filter((u: any) => u.role === 'parent').length;
+      const totalClasses = classesData.length;
+
+      // Transform classes data
+      const transformedClasses = classesData.map((cls: any) => ({
+        id: cls.id,
+        name: cls.name,
+        section: cls.section,
+        students: cls.enrollments?.length || 0,
+        teacher: cls.teacher?.name || 'Not Assigned',
+        averageScore: 0, // We'll need to calculate this from marks
+        status: cls.isActive ? 'active' : 'inactive'
+      }));
+
+      // Transform users data
+      const transformedUsers = usersData.map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        status: u.isActive ? 'active' : 'inactive',
+        joinDate: new Date(u.createdAt).toLocaleDateString(),
+        lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never',
+        avatar: u.name.split(' ').map((n: string) => n[0]).join('')
+      }));
+
+      setFetchedStats({
+        totalStudents,
+        totalTeachers,
+        totalStaff,
+        totalParents,
+        totalClasses,
+        totalSubjects: 0, // We'll need a subjects API
+        averageAttendance: 0, // We'll need to calculate this
+        averageScore: 0, // We'll need to calculate this
+        revenue: { total: 0, collected: 0, pending: 0 }, // We'll need a payments API
+        activeUsers: usersData.filter((u: any) => u.isActive).length,
+        systemHealth: 100
+      });
+
+      setFetchedClasses(transformedClasses);
+      setFetchedUsers(transformedUsers);
+
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const fetchFeeStructures = async () => {
+    if (!user?.schoolId) return;
+
+    try {
+      const response = await fetch('/api/fee-structures');
+      if (response.ok) {
+        const feeStructuresData = await response.json();
+        const transformedFeeStructures = feeStructuresData.map((fs: any) => ({
+          id: fs.id,
+          className: fs.class ? `${fs.class.name} ${fs.class.section}` : fs.student ? fs.student.name : 'All Classes',
+          amount: fs.amount,
+          term: fs.term,
+          academicYear: fs.academicYear,
+          dueDate: new Date(fs.dueDate).toLocaleDateString()
+        }));
+        setFetchedFeeStructures(transformedFeeStructures);
+      }
+    } catch (error) {
+      console.error('Error fetching fee structures:', error);
+    }
+  };
+
+  const users: UserData[] = fetchedUsers;
+
+  const classes: ClassData[] = fetchedClasses;
+
+  const feeStructure: FeeStructure[] = fetchedFeeStructures;
+
+  const activities: Activity[] = [];
+
+  const systemLogs: SystemLog[] = [];
 
   useEffect(() => {
     setMounted(true);
@@ -143,6 +219,8 @@ export default function AdminDashboard() {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
       fetchSchoolInfo();
+      fetchStats();
+      fetchFeeStructures();
     } else {
       window.location.href = '/';
     }
@@ -525,23 +603,25 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* AI Admin Insight */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl overflow-hidden bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-xl border border-blue-500/30 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3"><div className="p-2 sm:p-3 rounded-xl bg-blue-500/20"><Brain className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" /></div><div><h3 className="text-white font-semibold text-base sm:text-lg">AI Admin Assistant</h3><p className="text-gray-300 text-sm">Strategic insights for school management</p></div></div>
-                  <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 text-sm font-medium">AI Powered</span></div>
-                </div>
-                <div className="mt-4 space-y-3">
-                  <p className="text-gray-300 text-sm sm:text-base">📊 Student enrollment increased by 12% this month. Projected growth: 8% next month.</p>
-                  <p className="text-gray-300 text-sm sm:text-base">💰 Outstanding fees: ₦3.5M. Send automated reminders to 45 parents with pending payments.</p>
-                  <p className="text-gray-300 text-sm sm:text-base">🎓 Top performing class: SS3 Science (78% average). Needs recognition.</p>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">Generate Report</button>
-                  <button className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-sm hover:bg-purple-500/30 transition-colors">Send Reminders</button>
-                  <button className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm hover:bg-emerald-500/30 transition-colors">Export Data</button>
-                </div>
-              </motion.div>
+              {/* AI Admin Insight - Only show when school has data */}
+              {stats.totalStudents > 0 && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl overflow-hidden bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-xl border border-blue-500/30 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3"><div className="p-2 sm:p-3 rounded-xl bg-blue-500/20"><Brain className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" /></div><div><h3 className="text-white font-semibold text-base sm:text-lg">AI Admin Assistant</h3><p className="text-gray-300 text-sm">Strategic insights for school management</p></div></div>
+                    <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 text-sm font-medium">AI Powered</span></div>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <p className="text-gray-300 text-sm sm:text-base">📊 Student enrollment increased by 12% this month. Projected growth: 8% next month.</p>
+                    <p className="text-gray-300 text-sm sm:text-base">💰 Outstanding fees: ₦3.5M. Send automated reminders to 45 parents with pending payments.</p>
+                    <p className="text-gray-300 text-sm sm:text-base">🎓 Top performing class: SS3 Science (78% average). Needs recognition.</p>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">Generate Report</button>
+                    <button className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-sm hover:bg-purple-500/30 transition-colors">Send Reminders</button>
+                    <button className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm hover:bg-emerald-500/30 transition-colors">Export Data</button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           )}
 
@@ -693,7 +773,10 @@ export default function AdminDashboard() {
             <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
               <div className="p-6 border-b border-white/10 flex justify-between items-center flex-wrap gap-4">
                 <h2 className="text-xl font-bold text-white">Fee Structure</h2>
-                <button className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors flex items-center gap-2">
+                <button
+                  onClick={() => setShowAddFeeStructure(true)}
+                  className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors flex items-center gap-2"
+                >
                   <Plus className="w-4 h-4" />Add Fee Structure
                 </button>
               </div>
@@ -839,6 +922,346 @@ export default function AdminDashboard() {
                 <option>Parent</option>
               </select>
               <button className="w-full py-2 rounded-xl bg-blue-500/20 text-blue-400">Create User</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Fee Structure Modal */}
+      <AnimatePresence>
+        {showAddFeeStructure && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => {
+              setShowAddFeeStructure(false);
+              setSelectedAssignmentMethod('');
+              setSelectedStudentMethod('');
+              setSelectedParentMethod('');
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl rounded-2xl bg-white/10 backdrop-blur-2xl border border-white/20 p-6 max-h-[90vh] overflow-y-auto"
+            >
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-green-400" />
+                Add Fee Structure
+              </h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                
+                const assignmentMethod = formData.get('assignmentMethod');
+
+                const data: any = {
+                  name: formData.get('name'),
+                  description: formData.get('description'),
+                  amount: formData.get('amount'),
+                  term: formData.get('term'),
+                  academicYear: formData.get('academicYear'),
+                  dueDate: formData.get('dueDate'),
+                  isMandatory: formData.get('isMandatory') === 'on',
+                  isRecurring: formData.get('isRecurring') === 'on'
+                };
+
+                // Add assignment data based on method
+                if (assignmentMethod === 'all') {
+                  // No additional data needed for all school
+                } else if (assignmentMethod === 'class') {
+                  const selectedClass = formData.get('selectedClass');
+                  if (selectedClass) {
+                    data.classIds = [selectedClass];
+                  }
+                } else if (assignmentMethod === 'student') {
+                  const studentSelectionMethod = formData.get('studentSelectionMethod');
+                  if (studentSelectionMethod === 'id') {
+                    const studentId = formData.get('studentId');
+                    if (studentId) {
+                      data.studentIds = [studentId.toString().trim()];
+                    }
+                  } else if (studentSelectionMethod === 'name') {
+                    const studentName = formData.get('studentName');
+                    if (studentName) {
+                      data.studentIds = [studentName.toString().trim()];
+                    }
+                  } else if (studentSelectionMethod === 'multiple') {
+                    const selectedStudents = formData.get('selectedStudents')?.toString().split(',').map(s => s.trim()).filter(s => s) || [];
+                    data.studentIds = selectedStudents;
+                  }
+                } else if (assignmentMethod === 'parent') {
+                  const parentSelectionMethod = formData.get('parentSelectionMethod');
+                  if (parentSelectionMethod === 'id') {
+                    const parentId = formData.get('parentId');
+                    if (parentId) {
+                      data.parentIds = [parentId.toString().trim()];
+                    }
+                  } else if (parentSelectionMethod === 'name') {
+                    const parentName = formData.get('parentName');
+                    if (parentName) {
+                      data.parentIds = [parentName.toString().trim()];
+                    }
+                  } else if (parentSelectionMethod === 'multiple') {
+                    const selectedParents = formData.get('selectedParents')?.toString().split(',').map(s => s.trim()).filter(s => s) || [];
+                    data.parentIds = selectedParents;
+                  }
+                }
+
+                try {
+                  const response = await fetch('/api/fee-structures', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                  });
+
+                  if (response.ok) {
+                    const result = await response.json();
+                    setShowAddFeeStructure(false);
+                    fetchFeeStructures();
+                    alert(`Successfully created ${result.created} fee structure(s)`);
+                  } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error || 'Failed to create fee structures'}`);
+                  }
+                } catch (error) {
+                  console.error('Error:', error);
+                  alert('Error creating fee structures');
+                }
+              }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <input
+                    name="name"
+                    type="text"
+                    placeholder="Fee Name (e.g., Tuition Fee)"
+                    required
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                  />
+                  <input
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    placeholder="Amount"
+                    required
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <textarea
+                  name="description"
+                  placeholder="Description (optional)"
+                  rows={2}
+                  className="w-full mb-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <select
+                    name="term"
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none"
+                  >
+                    <option value="First Term">First Term</option>
+                    <option value="Second Term">Second Term</option>
+                    <option value="Third Term">Third Term</option>
+                  </select>
+                  <input
+                    name="academicYear"
+                    type="text"
+                    placeholder="Academic Year (e.g., 2024/2025)"
+                    defaultValue="2024/2025"
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="mb-4">
+                  <input
+                    name="dueDate"
+                    type="date"
+                    required
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                {/* Assignment Method */}
+                <div className="mb-4">
+                  <label className="block text-white font-medium mb-2">Assignment Method</label>
+                  <select
+                    name="assignmentMethod"
+                    value={selectedAssignmentMethod}
+                    onChange={(e) => {
+                      setSelectedAssignmentMethod(e.target.value);
+                      setSelectedStudentMethod('');
+                      setSelectedParentMethod('');
+                    }}
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none"
+                  >
+                    <option value="">Select assignment method</option>
+                    <option value="all">All School</option>
+                    <option value="class">By Class</option>
+                    <option value="student">By Student</option>
+                    <option value="parent">By Parent</option>
+                  </select>
+                </div>
+
+                {/* Class Selection */}
+                {selectedAssignmentMethod === 'class' && (
+                  <div className="mb-4">
+                    <label className="block text-white font-medium mb-2">Select Class</label>
+                    <select
+                      name="selectedClass"
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none"
+                    >
+                      <option value="">Choose a class</option>
+                      {classes.map(cls => (
+                        <option key={cls.id} value={cls.id}>{cls.name} {cls.section}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Student Selection */}
+                {selectedAssignmentMethod === 'student' && (
+                  <div className="mb-4">
+                    <label className="block text-white font-medium mb-2">Student Selection Method</label>
+                    <select
+                      name="studentSelectionMethod"
+                      value={selectedStudentMethod}
+                      onChange={(e) => setSelectedStudentMethod(e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none mb-2"
+                    >
+                      <option value="">Select how to identify students</option>
+                      <option value="id">By Student ID</option>
+                      <option value="name">By Student Name</option>
+                      <option value="multiple">Multiple Students</option>
+                    </select>
+
+                    {selectedStudentMethod === 'id' && (
+                      <div>
+                        <label className="block text-white font-medium mb-2">Student ID</label>
+                        <input
+                          name="studentId"
+                          type="text"
+                          placeholder="Enter Student ID (e.g., STU001)"
+                          className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {selectedStudentMethod === 'name' && (
+                      <div>
+                        <label className="block text-white font-medium mb-2">Student Name</label>
+                        <input
+                          name="studentName"
+                          type="text"
+                          placeholder="Enter Student Name"
+                          className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {selectedStudentMethod === 'multiple' && (
+                      <div>
+                        <label className="block text-white font-medium mb-2">Student IDs or Names (comma-separated)</label>
+                        <input
+                          name="selectedStudents"
+                          type="text"
+                          placeholder="e.g., STU001, John Doe, STU002"
+                          className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                        />
+                        <p className="text-gray-400 text-xs mt-1">Enter student IDs or full names separated by commas</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Parent Selection */}
+                {selectedAssignmentMethod === 'parent' && (
+                  <div className="mb-4">
+                    <label className="block text-white font-medium mb-2">Parent Selection Method</label>
+                    <select
+                      name="parentSelectionMethod"
+                      value={selectedParentMethod}
+                      onChange={(e) => setSelectedParentMethod(e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none mb-2"
+                    >
+                      <option value="">Select how to identify parents</option>
+                      <option value="id">By Parent ID</option>
+                      <option value="name">By Parent Name</option>
+                      <option value="multiple">Multiple Parents</option>
+                    </select>
+
+                    {selectedParentMethod === 'id' && (
+                      <div>
+                        <label className="block text-white font-medium mb-2">Parent ID</label>
+                        <input
+                          name="parentId"
+                          type="text"
+                          placeholder="Enter Parent ID (e.g., PAR001)"
+                          className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {selectedParentMethod === 'name' && (
+                      <div>
+                        <label className="block text-white font-medium mb-2">Parent Name</label>
+                        <input
+                          name="parentName"
+                          type="text"
+                          placeholder="Enter Parent Name"
+                          className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {selectedParentMethod === 'multiple' && (
+                      <div>
+                        <label className="block text-white font-medium mb-2">Parent IDs or Names (comma-separated)</label>
+                        <input
+                          name="selectedParents"
+                          type="text"
+                          placeholder="e.g., PAR001, Jane Smith, PAR002"
+                          className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                        />
+                        <p className="text-gray-400 text-xs mt-1">Enter parent IDs or full names separated by commas. Fee will be assigned to their children.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4 mb-4">
+                  <label className="flex items-center gap-2 text-white text-sm">
+                    <input name="isMandatory" type="checkbox" defaultChecked className="rounded" />
+                    Mandatory
+                  </label>
+                  <label className="flex items-center gap-2 text-white text-sm">
+                    <input name="isRecurring" type="checkbox" defaultChecked className="rounded" />
+                    Recurring (Termly)
+                  </label>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium hover:shadow-xl transition-all"
+                  >
+                    Create Fee Structure(s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddFeeStructure(false);
+                      setSelectedAssignmentMethod('');
+                      setSelectedStudentMethod('');
+                      setSelectedParentMethod('');
+                    }}
+                    className="px-6 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+
+
             </motion.div>
           </motion.div>
         )}

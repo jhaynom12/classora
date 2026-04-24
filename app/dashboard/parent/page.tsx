@@ -162,6 +162,8 @@ export default function ParentDashboard() {
   const [loading, setLoading] = useState(true);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [outstandingFees, setOutstandingFees] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [children, setChildren] = useState<Child[]>([
     {
       id: 'STU001',
@@ -477,25 +479,77 @@ export default function ParentDashboard() {
     },
   ]);
 
-  // Sample messages
-  const messages: Message[] = [
-    { id: '1', childId: 'STU001', childName: 'Adeola K.', teacher: 'Mrs. Adebayo', message: 'Adeola has been showing great improvement in Mathematics. Keep up the good work at home!', date: '2024-04-14', isFromTeacher: true, read: false },
-    { id: '2', childId: 'STU001', childName: 'Adeola K.', teacher: 'Mrs. Eze', message: 'Please encourage Adeola to practice more chemistry problems.', date: '2024-04-13', isFromTeacher: true, read: true },
-    { id: '3', childId: 'STU002', childName: 'Bola K.', teacher: 'Mrs. Okafor', message: 'Bola is doing exceptionally well in Mathematics!', date: '2024-04-12', isFromTeacher: true, read: false },
-  ];
+  // Sample messages (empty for new schools)
+  const messages: Message[] = [];
 
-  // Sample payments
-  const payments: Payment[] = [
-    { id: '1', childId: 'STU001', childName: 'Adeola K.', amount: 150000, date: '2024-03-25', method: 'Bank Transfer', reference: 'TRX-001234', status: 'success' },
-    { id: '2', childId: 'STU002', childName: 'Bola K.', amount: 100000, date: '2024-03-20', method: 'Card Payment', reference: 'TRX-001235', status: 'success' },
-  ];
+  // Sample announcements (empty for new schools)
+  const announcements: Announcement[] = [];
 
-  // Sample announcements
-  const announcements: Announcement[] = [
-    { id: '1', title: 'Parent-Teacher Conference', content: 'Schedule your meeting with teachers for April 25th', date: '2024-04-15', author: 'Principal', priority: 'high' },
-    { id: '2', title: 'Mid-Term Break', content: 'School will be closed from April 25th to April 30th', date: '2024-04-14', author: 'Admin', priority: 'medium' },
-    { id: '3', title: 'Fee Payment Deadline', content: 'Second term fees due by April 25th', date: '2024-04-13', author: 'Bursary', priority: 'high' },
-  ];
+  // Fetch outstanding fees
+  const fetchOutstandingFees = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch('/api/outstanding-fees');
+      if (response.ok) {
+        const feesData = await response.json();
+        setOutstandingFees(feesData);
+      }
+    } catch (error) {
+      console.error('Error fetching outstanding fees:', error);
+    }
+  };
+
+  // Fetch payments
+  const fetchPayments = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch('/api/payments');
+      if (response.ok) {
+        const paymentsData = await response.json();
+        const transformedPayments = paymentsData.map((p: any) => ({
+          id: p.id,
+          childId: p.studentId,
+          childName: p.student.name,
+          amount: p.amount,
+          date: new Date(p.createdAt).toLocaleDateString(),
+          method: p.method,
+          reference: p.reference,
+          status: p.status
+        }));
+        setPayments(transformedPayments);
+      }
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    }
+  };
+
+  // Calculate fee status for children
+  const getChildFeeStatus = (childId: string) => {
+    const childFees = outstandingFees.filter(fee =>
+      fee.student?.id === childId
+    );
+
+    const totalAmount = childFees.reduce((sum, fee) => sum + fee.amount, 0);
+    const totalOutstanding = childFees.reduce((sum, fee) => sum + fee.outstanding, 0);
+    const totalPaid = totalAmount - totalOutstanding;
+
+    let status: 'paid' | 'partial' | 'unpaid' = 'paid';
+    if (totalOutstanding === totalAmount && totalAmount > 0) {
+      status = 'unpaid';
+    } else if (totalOutstanding > 0) {
+      status = 'partial';
+    }
+
+    return {
+      term: 'Current Term',
+      amount: totalAmount,
+      paid: totalPaid,
+      due: totalOutstanding,
+      status
+    };
+  };
 
   // Check if device is mobile
   const checkMobile = () => {
@@ -514,6 +568,8 @@ export default function ParentDashboard() {
         console.log('Parent dashboard - parsed user:', userData);
         setUser(userData);
         fetchSchoolInfo();
+        fetchOutstandingFees();
+        fetchPayments();
       } catch (error) {
         console.error('Error parsing user data:', error);
         window.location.href = '/';
@@ -623,6 +679,11 @@ export default function ParentDashboard() {
   };
 
   const selectedChildData = children.find(c => c.id === selectedChild);
+  const selectedChildFeeStatus = selectedChildData ? getChildFeeStatus(selectedChildData.id) : null;
+  const childDataWithFeeStatus = selectedChildData ? {
+    ...selectedChildData,
+    feeStatus: selectedChildFeeStatus || selectedChildData.feeStatus
+  } : null;
   const unreadMessages = messages.filter(m => !m.read).length;
   const totalDue = children.reduce((sum, c) => sum + c.feeStatus.due, 0);
 
@@ -1180,12 +1241,12 @@ export default function ParentDashboard() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xl">
-                          {selectedChildData?.avatar}
+                          {childDataWithFeeStatus?.avatar}
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-white">{selectedChildData?.name}</h2>
-                          <p className="text-gray-300">{selectedChildData?.class}</p>
-                          <p className="text-gray-400 text-sm mt-1">Teacher: {selectedChildData?.teacher}</p>
+                          <h2 className="text-2xl font-bold text-white">{childDataWithFeeStatus?.name}</h2>
+                          <p className="text-gray-300">{childDataWithFeeStatus?.class}</p>
+                          <p className="text-gray-400 text-sm mt-1">Teacher: {childDataWithFeeStatus?.teacher}</p>
                         </div>
                       </div>
                       <div className="flex gap-3">
@@ -1204,19 +1265,19 @@ export default function ParentDashboard() {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 text-center">
-                      <p className="text-2xl font-bold text-white">{selectedChildData?.averageScore}%</p>
+                      <p className="text-2xl font-bold text-white">{childDataWithFeeStatus?.averageScore}%</p>
                       <p className="text-gray-400 text-sm">Average Score</p>
                     </div>
                     <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 text-center">
-                      <p className="text-2xl font-bold text-purple-400">{selectedChildData?.predictedGrade}</p>
+                      <p className="text-2xl font-bold text-purple-400">{childDataWithFeeStatus?.predictedGrade}</p>
                       <p className="text-gray-400 text-sm">Predicted Grade</p>
                     </div>
                     <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 text-center">
-                      <p className="text-2xl font-bold text-green-400">{selectedChildData?.attendance}%</p>
+                      <p className="text-2xl font-bold text-green-400">{childDataWithFeeStatus?.attendance}%</p>
                       <p className="text-gray-400 text-sm">Attendance</p>
                     </div>
                     <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4 text-center">
-                      <p className="text-2xl font-bold text-yellow-400">#{selectedChildData?.rank}/{selectedChildData?.totalStudents}</p>
+                      <p className="text-2xl font-bold text-yellow-400">#{childDataWithFeeStatus?.rank}/{childDataWithFeeStatus?.totalStudents}</p>
                       <p className="text-gray-400 text-sm">Class Rank</p>
                     </div>
                   </div>
@@ -1227,7 +1288,7 @@ export default function ParentDashboard() {
                       <h3 className="text-xl font-bold text-white">Subject Performance</h3>
                     </div>
                     <div className="divide-y divide-white/10">
-                      {selectedChildData?.subjects.map((subject, index) => (
+                      {childDataWithFeeStatus?.subjects.map((subject, index) => (
                         <div key={index} className="p-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                             <div>
@@ -1273,34 +1334,34 @@ export default function ParentDashboard() {
                     </div>
                     <div className="p-6">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="text-gray-400">{selectedChildData?.feeStatus.term}</span>
-                        <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(selectedChildData?.feeStatus.status || '')}`}>
-                          {selectedChildData?.feeStatus.status?.toUpperCase()}
+                        <span className="text-gray-400">{childDataWithFeeStatus?.feeStatus.term}</span>
+                        <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(childDataWithFeeStatus?.feeStatus.status || '')}`}>
+                          {childDataWithFeeStatus?.feeStatus.status?.toUpperCase()}
                         </span>
                       </div>
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">Total Amount</span>
-                          <span className="text-white">₦{(selectedChildData?.feeStatus?.amount ?? 0).toLocaleString()}</span>
+                          <span className="text-white">₦{(childDataWithFeeStatus?.feeStatus?.amount ?? 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">Amount Paid</span>
-                          <span className="text-green-400">₦{(selectedChildData?.feeStatus?.paid ?? 0).toLocaleString()}</span>
+                          <span className="text-green-400">₦{(childDataWithFeeStatus?.feeStatus?.paid ?? 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">Outstanding Balance</span>
-                          <span className="text-red-400">₦{(selectedChildData?.feeStatus?.due ?? 0).toLocaleString()}</span>
+                          <span className="text-red-400">₦{(childDataWithFeeStatus?.feeStatus?.due ?? 0).toLocaleString()}</span>
                         </div>
                       </div>
                       <div className="w-full bg-white/10 rounded-full h-2 mb-4">
                         <div 
                           className="h-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
-                          style={{ width: `${(selectedChildData?.feeStatus?.paid ?? 0) / (selectedChildData?.feeStatus?.amount ?? 1) * 100}%` }}
+                          style={{ width: `${(childDataWithFeeStatus?.feeStatus?.paid ?? 0) / (childDataWithFeeStatus?.feeStatus?.amount ?? 1) * 100}%` }}
                         />
                       </div>
-                      {selectedChildData?.feeStatus?.due && selectedChildData.feeStatus.due > 0 && (
+                      {childDataWithFeeStatus?.feeStatus?.due && childDataWithFeeStatus.feeStatus.due > 0 && (
                         <button className="w-full py-2 rounded-xl bg-yellow-500/20 text-yellow-400 text-sm hover:bg-yellow-500/30 transition-colors">
-                          Pay Outstanding ₦{selectedChildData.feeStatus.due.toLocaleString()}
+                          Pay Outstanding ₦{childDataWithFeeStatus.feeStatus.due.toLocaleString()}
                         </button>
                       )}
                     </div>
