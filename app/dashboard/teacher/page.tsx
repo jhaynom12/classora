@@ -158,16 +158,12 @@ export default function TeacherDashboard() {
   useEffect(() => {
     setMounted(true);
     const savedUser = localStorage.getItem('classora_user');
-    const savedSchool = localStorage.getItem('classora_school_name');
     
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+      fetchSchoolInfo();
     } else {
       window.location.href = '/';
-    }
-    
-    if (savedSchool) {
-      setSchoolName(savedSchool);
     }
 
     const checkMobile = () => {
@@ -188,6 +184,20 @@ export default function TeacherDashboard() {
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = '/';
+  };
+
+  const fetchSchoolInfo = async () => {
+    if (user?.schoolId) {
+      try {
+        const response = await fetch(`/api/school?schoolId=${user.schoolId}`);
+        if (response.ok) {
+          const school = await response.json();
+          setSchoolName(school.name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch school info:', error);
+      }
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -505,7 +505,6 @@ export default function ParentDashboard() {
   useEffect(() => {
     setMounted(true);
     const savedUser = localStorage.getItem('classora_user');
-    const savedSchool = localStorage.getItem('classora_school_name');
 
     console.log('Parent dashboard - savedUser:', savedUser);
 
@@ -514,6 +513,7 @@ export default function ParentDashboard() {
         const userData = JSON.parse(savedUser);
         console.log('Parent dashboard - parsed user:', userData);
         setUser(userData);
+        fetchSchoolInfo();
       } catch (error) {
         console.error('Error parsing user data:', error);
         window.location.href = '/';
@@ -523,10 +523,6 @@ export default function ParentDashboard() {
       console.log('No saved user found, redirecting to login');
       window.location.href = '/';
       return;
-    }
-
-    if (savedSchool) {
-      setSchoolName(savedSchool);
     }
 
     setLoading(false);
@@ -585,6 +581,20 @@ export default function ParentDashboard() {
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = '/';
+  };
+
+  const fetchSchoolInfo = async () => {
+    if (user?.schoolId) {
+      try {
+        const response = await fetch(`/api/school?schoolId=${user.schoolId}`);
+        if (response.ok) {
+          const school = await response.json();
+          setSchoolName(school.name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch school info:', error);
+      }
+    }
   };
 
   const getGradeColor = (grade: string) => {

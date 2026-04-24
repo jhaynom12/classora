@@ -22,6 +22,40 @@ async function main() {
   
   console.log(`✅ School created: ${school.name}`);
   
+  // Create Brentwood Hill School
+  const brentwoodSchool = await prisma.school.upsert({
+    where: { slug: 'brentwood-hill-school' },
+    update: {},
+    create: {
+      name: 'Brentwood Hill School',
+      slug: 'brentwood-hill-school',
+      address: 'Brentwood Hill, London',
+      phone: '+44 20 1234 5678',
+      email: 'info@brentwoodhill.com',
+      primaryColor: '#1f2937'
+    }
+  });
+  
+  console.log(`✅ School created: ${brentwoodSchool.name}`);
+  
+  // Create admin user for Brentwood Hill
+  const brentwoodAdminPassword = await bcrypt.hash('henry1234qwer', 10);
+  const brentwoodAdmin = await prisma.user.upsert({
+    where: { email: 'admin@brentwoodhill.com' },
+    update: {},
+    create: {
+      name: 'Brentwood Admin',
+      email: 'admin@brentwoodhill.com',
+      password: brentwoodAdminPassword,
+      role: 'admin',
+      schoolId: brentwoodSchool.id,
+      staffId: 'ADM002',
+      isActive: true
+    }
+  });
+  
+  console.log(`✅ Admin created: ${brentwoodAdmin.email}`);
+  
   // Create admin user
   const adminPassword = await bcrypt.hash('admin123', 10);
   const admin = await prisma.user.upsert({

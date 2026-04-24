@@ -140,11 +140,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     setMounted(true);
     const savedUser = localStorage.getItem('classora_user');
-    const savedSchool = localStorage.getItem('classora_school_name');
-    if (savedUser) setUser(JSON.parse(savedUser));
-    else window.location.href = '/';
-    if (savedSchool) setSchoolName(savedSchool);
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      fetchSchoolInfo();
+    } else {
+      window.location.href = '/';
+    }
   }, []);
+
+  const fetchSchoolInfo = async () => {
+    if (user?.schoolId) {
+      try {
+        const response = await fetch(`/api/school?schoolId=${user.schoolId}`);
+        if (response.ok) {
+          const school = await response.json();
+          setSchoolName(school.name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch school info:', error);
+      }
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -152,11 +168,21 @@ export default function AdminDashboard() {
     window.location.href = '/';
   };
 
-  const saveSchoolName = () => {
-    if (tempSchoolName.trim()) {
-      setSchoolName(tempSchoolName);
-      localStorage.setItem('classora_school_name', tempSchoolName);
-      setEditingSchool(false);
+  const saveSchoolName = async () => {
+    if (tempSchoolName.trim() && user?.schoolId) {
+      try {
+        const response = await fetch(`/api/school?schoolId=${user.schoolId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: tempSchoolName })
+        });
+        if (response.ok) {
+          setSchoolName(tempSchoolName);
+          setEditingSchool(false);
+        }
+      } catch (error) {
+        console.error('Failed to update school name:', error);
+      }
     }
   };
 
