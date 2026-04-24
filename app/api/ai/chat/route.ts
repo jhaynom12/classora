@@ -9,9 +9,9 @@ export async function POST(request: Request) {
   try {
     const { question, role } = await request.json();
 
-    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY;
     if (!apiKey) {
-      console.log('❌ No Google AI API key found in .env.local');
+      console.log('❌ No Google AI API key found in environment variables');
       return NextResponse.json({
         response: "🔑 **Google AI Key Missing!**\n\nTo enable AI responses:\n1. Get an API key from https://makersuite.google.com/app/apikey\n2. Add to `.env.local`: `GOOGLE_AI_API_KEY=your-key`\n3. Restart server with `npm run dev`\n\nMeanwhile, I'm here to help with your study question!"
       });

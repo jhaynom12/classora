@@ -104,6 +104,7 @@ export default function Home() {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, password, role: selectedRole }),
       });
@@ -115,7 +116,13 @@ export default function Home() {
       localStorage.setItem('classora_token', data.token);
       localStorage.setItem('classora_user', JSON.stringify(data.user));
       setLoggedInUser(data.user);
-      window.location.href = `/dashboard/${selectedRole}`;
+      const dashboardMap: { [key: string]: string } = {
+        student: '/dashboard/student',
+        teacher: '/dashboard/teacher',
+        parent: '/dashboard/parent',
+        admin: '/dashboard/admin',
+      };
+      window.location.href = dashboardMap[selectedRole || 'student'] || '/';
     } catch (error) {
       setError('Network error');
     } finally {

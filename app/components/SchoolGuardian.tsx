@@ -96,11 +96,18 @@ How can I support your teaching today?`;
     setIsLoading(true);
 
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('classora_token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
+        credentials: 'same-origin',
         body: JSON.stringify({
           question: input,
           role: userRole

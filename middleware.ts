@@ -9,11 +9,13 @@ const publicRoutes = ['/', '/api/auth/login', '/api/auth/register', '/api/seed',
 
 // Role-based route access
 const roleRoutes: { [key: string]: string[] } = {
-  admin: ['/dashboard/admin', '/dashboard/student', '/api/admin', '/api/bulk'],
-  teacher: ['/dashboard/teacher', '/dashboard/student', '/api/teacher', '/api/bulk'],
-  parent: ['/dashboard/parent', '/dashboard/student', '/api/parent'],
-  student: ['/dashboard/student', '/api/student'],
-  hod: ['/dashboard/hod', '/api/hod', '/api/bulk']
+  superadmin: ['/dashboard/super-admin', '/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk', '/api/schools', '/api/school', '/api/users'],
+  'superadmin-assistant': ['/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk', '/api/schools', '/api/school', '/api/users'],
+  admin: ['/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk'],
+  teacher: ['/dashboard/teacher', '/dashboard/student', '/dashboard/forum', '/api/teacher', '/api/bulk'],
+  parent: ['/dashboard/parent', '/dashboard/student', '/dashboard/forum', '/api/parent'],
+  student: ['/dashboard/student', '/dashboard/forum', '/api/student'],
+  hod: ['/dashboard/hod', '/dashboard/forum', '/api/hod', '/api/bulk']
 };
 
 // Shared authenticated dashboard routes available to all roles
@@ -56,6 +58,7 @@ export async function middleware(request: NextRequest) {
     if (!isAllowed && pathname.startsWith('/dashboard')) {
       // Redirect to user's correct dashboard
       const dashboardMap: { [key: string]: string } = {
+        superadmin: '/dashboard/super-admin',
         admin: '/dashboard/admin',
         teacher: '/dashboard/teacher',
         parent: '/dashboard/parent',

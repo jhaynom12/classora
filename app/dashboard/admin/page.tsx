@@ -36,7 +36,7 @@ interface UserData {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'teacher' | 'parent' | 'staff' | 'admin' | 'hod';
+  role: 'student' | 'teacher' | 'parent' | 'staff' | 'admin' | 'hod' | 'superadmin' | 'superadmin-assistant';
   status: 'active' | 'inactive' | 'suspended';
   joinDate: string;
   lastLogin: string;
@@ -247,15 +247,16 @@ export default function AdminDashboard() {
   };
 
   const saveSchoolName = async () => {
-    if (tempSchoolName.trim() && user?.schoolId) {
+    const nameToSave = editingSchool ? tempSchoolName.trim() : schoolName.trim();
+    if (nameToSave && user?.schoolId) {
       try {
         const response = await fetch(`/api/school?schoolId=${user.schoolId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: tempSchoolName })
+          body: JSON.stringify({ name: nameToSave })
         });
         if (response.ok) {
-          setSchoolName(tempSchoolName);
+          setSchoolName(nameToSave);
           setEditingSchool(false);
         }
       } catch (error) {
@@ -272,7 +273,8 @@ export default function AdminDashboard() {
       case 'staff': return 'text-purple-400 bg-purple-500/20';
       case 'admin': return 'text-red-400 bg-red-500/20';
       case 'hod': return 'text-indigo-400 bg-indigo-500/20';
-      case 'hod': return 'text-indigo-400 bg-indigo-500/20';
+      case 'superadmin': return 'text-sky-400 bg-sky-500/20';
+      case 'superadmin-assistant': return 'text-violet-400 bg-violet-500/20';
       default: return 'text-gray-400 bg-gray-500/20';
     }
   };
@@ -290,7 +292,7 @@ export default function AdminDashboard() {
   };
 
   if (!mounted || !user) return null;
-  if (user.role !== 'admin') { window.location.href = '/'; return null; }
+  if (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'superadmin-assistant') { window.location.href = '/'; return null; }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -817,7 +819,7 @@ export default function AdminDashboard() {
                     <label className="block text-gray-400 text-sm mb-2">School Name</label>
                     <div className="flex items-center gap-2">
                       <input type="text" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="flex-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none" />
-                      <button className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors">Save</button>
+                      <button type="button" onClick={saveSchoolName} className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors">Save</button>
                     </div>
                   </div>
                   <div>

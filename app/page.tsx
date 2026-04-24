@@ -313,14 +313,22 @@ export default function LandingPage() {
 
                   {/* Info Text */}
                   {!loading && (
-                    <motion.p
+                    <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.6 }}
-                      className="text-center text-white/40 text-sm"
+                      className="text-center space-y-2"
                     >
-                      Can't find your school? Contact your administrator.
-                    </motion.p>
+                      <p className="text-white/40 text-sm">
+                        Can't find your school? Contact your administrator.
+                      </p>
+                      <button
+                        onClick={() => router.push('/super-admin/login')}
+                        className="text-sky-400 hover:text-sky-300 text-sm underline underline-offset-2 transition-colors duration-200"
+                      >
+                        System Administration →
+                      </button>
+                    </motion.div>
                   )}
                 </div>
               </div>
