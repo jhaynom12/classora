@@ -98,6 +98,15 @@ export default function AdminDashboard() {
   const [fetchedClasses, setFetchedClasses] = useState<ClassData[]>([]);
   const [fetchedUsers, setFetchedUsers] = useState<UserData[]>([]);
   const [fetchedFeeStructures, setFetchedFeeStructures] = useState<FeeStructure[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const getAuthHeaders = () => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('classora_token='))?.split('=')[1];
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+  };
   const [showAddFeeStructure, setShowAddFeeStructure] = useState(false);
   
   // Form state for dynamic visibility
@@ -120,11 +129,15 @@ export default function AdminDashboard() {
     setLoadingStats(true);
     try {
       // Fetch classes for stats
-      const classesResponse = await fetch(`/api/classes?schoolId=${user.schoolId}`);
+      const classesResponse = await fetch(`/api/classes?schoolId=${user.schoolId}`, {
+        headers: getAuthHeaders()
+      });
       const classesData = classesResponse.ok ? await classesResponse.json() : [];
 
       // Fetch users for stats
-      const usersResponse = await fetch(`/api/users?schoolId=${user.schoolId}`);
+      const usersResponse = await fetch(`/api/users?schoolId=${user.schoolId}`, {
+        headers: getAuthHeaders()
+      });
       const usersData = usersResponse.ok ? await usersResponse.json() : [];
 
       // Calculate stats from API data
@@ -185,7 +198,9 @@ export default function AdminDashboard() {
     if (!user?.schoolId) return;
 
     try {
-      const response = await fetch('/api/fee-structures');
+      const response = await fetch('/api/fee-structures', {
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
         const feeStructuresData = await response.json();
         const transformedFeeStructures = feeStructuresData.map((fs: any) => ({
@@ -252,15 +267,20 @@ export default function AdminDashboard() {
       try {
         const response = await fetch(`/api/school?schoolId=${user.schoolId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ name: nameToSave })
         });
         if (response.ok) {
           setSchoolName(nameToSave);
           setEditingSchool(false);
+          setErrorMessage('');
+        } else {
+          const error = await response.json();
+          setErrorMessage(error.error || 'Failed to update school name');
         }
       } catch (error) {
         console.error('Failed to update school name:', error);
+        setErrorMessage('Network error while updating school name');
       }
     }
   };
@@ -409,6 +429,7 @@ export default function AdminDashboard() {
                       <button onClick={() => setEditingSchool(true)} className="text-gray-400 hover:text-white"><Edit className="w-3 h-3" /></button>
                     </div>
                   )}
+                  {errorMessage && <div className="text-red-400 text-xs mt-1">{errorMessage}</div>}
                 </div>
                 <div className="hidden md:flex items-center gap-1 ml-6">
                   {[

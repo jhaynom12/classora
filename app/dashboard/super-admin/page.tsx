@@ -69,9 +69,19 @@ export default function SuperAdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const { theme, toggleTheme } = useTheme();
 
+  const getAuthHeaders = () => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('classora_token='))?.split('=')[1];
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+  };
+
   const fetchSchools = async () => {
     try {
-      const response = await fetch('/api/schools');
+      const response = await fetch('/api/schools', {
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
         const data = await response.json();
         setSchools(data);
@@ -86,7 +96,9 @@ export default function SuperAdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/users', {
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -145,7 +157,7 @@ export default function SuperAdminDashboard() {
     try {
       const response = await fetch('/api/super-admin/schools', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newSchool)
       });
       const data = await response.json();
@@ -182,7 +194,7 @@ export default function SuperAdminDashboard() {
     try {
       const response = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           name: newUser.name,
           email: newUser.email,
