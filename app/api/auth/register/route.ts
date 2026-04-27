@@ -19,15 +19,28 @@ export async function POST(request: Request) {
       );
     }
     
-    // Get the first school or create a default one
-    let school = await prisma.school.findFirst();
-    if (!school) {
-      school = await prisma.school.create({
-        data: {
-          name: 'Classora School',
-          slug: 'classora-school'
-        }
+    // Use provided schoolId or get the first school or create a default one
+    let school;
+    if (schoolId) {
+      school = await prisma.school.findUnique({
+        where: { id: schoolId }
       });
+      if (!school) {
+        return NextResponse.json(
+          { error: 'School not found' },
+          { status: 400 }
+        );
+      }
+    } else {
+      school = await prisma.school.findFirst();
+      if (!school) {
+        school = await prisma.school.create({
+          data: {
+            name: 'Classora School',
+            slug: 'classora-school'
+          }
+        });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
