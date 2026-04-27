@@ -89,6 +89,7 @@ export default function ParentProfile() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
         },
         body: JSON.stringify({
           id: user.id,

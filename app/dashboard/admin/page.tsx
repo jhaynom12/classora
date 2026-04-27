@@ -101,7 +101,7 @@ export default function AdminDashboard() {
   const [errorMessage, setErrorMessage] = useState('');
 
   const getAuthHeaders = () => {
-    const token = document.cookie.split('; ').find(row => row.startsWith('classora_token='))?.split('=')[1];
+    const token = localStorage.getItem('classora_token');
     return {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -1038,7 +1038,7 @@ export default function AdminDashboard() {
                 try {
                   const response = await fetch('/api/fee-structures', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(data)
                   });
 

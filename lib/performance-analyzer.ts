@@ -38,6 +38,7 @@ export async function analyzeStudentPerformance(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
       },
       body: JSON.stringify({
         studentId,

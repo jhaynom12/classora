@@ -490,7 +490,11 @@ export default function ParentDashboard() {
     if (!user?.id) return;
 
     try {
-      const response = await fetch('/api/outstanding-fees');
+      const response = await fetch('/api/outstanding-fees', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        }
+      });
       if (response.ok) {
         const feesData = await response.json();
         setOutstandingFees(feesData);
@@ -505,7 +509,11 @@ export default function ParentDashboard() {
     if (!user?.id) return;
 
     try {
-      const response = await fetch('/api/payments');
+      const response = await fetch('/api/payments', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        }
+      });
       if (response.ok) {
         const paymentsData = await response.json();
         const transformedPayments = paymentsData.map((p: any) => ({

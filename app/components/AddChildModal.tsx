@@ -45,7 +45,10 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
     try {
       const response = await fetch('/api/parent/add-child', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        },
         body: JSON.stringify({
           parentId,
           studentAdmissionNo: searchType === 'admission' ? admissionNo : undefined,

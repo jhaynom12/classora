@@ -103,6 +103,9 @@ export default function BulkUserManager({ schoolId, onSuccess }: BulkManagerProp
 
       const response = await fetch('/api/bulk/import', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        },
         body: formData,
       });
 

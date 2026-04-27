@@ -70,7 +70,7 @@ export default function SuperAdminDashboard() {
   const { theme, toggleTheme } = useTheme();
 
   const getAuthHeaders = () => {
-    const token = document.cookie.split('; ').find(row => row.startsWith('classora_token='))?.split('=')[1];
+    const token = localStorage.getItem('classora_token');
     return {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})

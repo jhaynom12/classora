@@ -63,6 +63,9 @@ export default function TeacherClassManagement({ teacherId, onRefresh }: Teacher
 
       const response = await fetch('/api/teacher/add-students', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        },
         body: formData,
       });
 
