@@ -110,7 +110,7 @@ export default function TeacherDashboard() {
   const { theme, toggleTheme } = useTheme();
 
   // Sample classes data (fallback when no data is fetched)
-  const sampleClasses: Class[] = classes.length > 0 ? classes : [];
+  // const sampleClasses: Class[] = classes.length > 0 ? classes : [];
 
   // Sample assignments - will be replaced with API call
   const [assignments, setAssignments] = useState<Assignment[]>([
@@ -309,8 +309,8 @@ export default function TeacherDashboard() {
   };
 
   const getUnreadMessages = () => messages.filter((m) => !m.read).length;
-  const getTotalStudents = () => sampleClasses.reduce((sum, c) => sum + c.students.length, 0);
-  const getAtRiskStudents = () => sampleClasses.reduce((sum, c) => sum + c.atRisk, 0);
+  const getTotalStudents = () => classes.reduce((sum, c) => sum + c.students.length, 0);
+  const getAtRiskStudents = () => classes.reduce((sum, c) => sum + c.atRisk, 0);
 
   const availableSubjects = Array.from(new Set(classes.map((c) => c.subject)));
 
@@ -360,7 +360,19 @@ export default function TeacherDashboard() {
     return null;
   }
 
-  const selectedClassData = sampleClasses.find(c => c.id === selectedClass);
+  // Show loading state while fetching initial data
+  if (loadingClasses || loadingStudents) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const selectedClassData = classes.find(c => c.id === selectedClass);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -559,7 +571,7 @@ export default function TeacherDashboard() {
                   <div className="p-2 sm:p-3 rounded-xl bg-blue-500/20">
                     <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                   </div>
-                  <span className="text-xl sm:text-2xl font-bold text-white">{sampleClasses.length}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-white">{classes.length}</span>
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm">Classes</p>
                 <p className="text-white/60 text-xs mt-1">Active classes</p>
@@ -797,7 +809,7 @@ export default function TeacherDashboard() {
                 </div>
                 <div className="mt-4 space-y-3">
                   <p className="text-gray-300 text-sm sm:text-base">
-                    📊 SS2 Science class average is 73%. {classes[0].atRisk} student(s) are at risk of failing.
+                    📊 {classes[0]?.name || 'Your class'} average is 73%. {classes[0]?.atRisk || 0} student(s) are at risk of failing.
                   </p>
                   <p className="text-gray-300 text-sm sm:text-base">
                     💡 Chidi O. needs additional support in Mathematics. Consider scheduling extra help sessions.
@@ -962,7 +974,7 @@ export default function TeacherDashboard() {
               ) : (
                 // All Classes Grid
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {sampleClasses.map((classItem) => (
+                  {classes.map((classItem) => (
                     <motion.div
                       key={classItem.id}
                       initial={{ opacity: 0, scale: 0.9 }}

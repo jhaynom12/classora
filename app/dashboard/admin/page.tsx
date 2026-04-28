@@ -549,6 +549,18 @@ export default function AdminDashboard() {
   if (!mounted || !user) return null;
   if (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'superadmin-assistant') { window.location.href = '/'; return null; }
 
+  // Show loading state while fetching initial data
+  if (loadingStats) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <ActionButtons />
