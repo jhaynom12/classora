@@ -11,7 +11,7 @@ const publicRoutes = ['/', '/api/auth/login', '/api/auth/register', '/api/seed',
 const roleRoutes: { [key: string]: string[] } = {
   superadmin: ['/dashboard/super-admin', '/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk', '/api/schools', '/api/school', '/api/users'],
   'superadmin-assistant': ['/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk', '/api/schools', '/api/school', '/api/users'],
-  admin: ['/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk'],
+  admin: ['/dashboard/admin', '/dashboard/student', '/dashboard/forum', '/api/admin', '/api/bulk', '/api/schools', '/api/school'],
   teacher: ['/dashboard/teacher', '/dashboard/student', '/dashboard/forum', '/api/teacher', '/api/bulk'],
   parent: ['/dashboard/parent', '/dashboard/student', '/dashboard/forum', '/api/parent'],
   student: ['/dashboard/student', '/dashboard/forum', '/api/student'],
