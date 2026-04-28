@@ -178,6 +178,58 @@ export default function TeacherDashboard() {
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
+        
+        // Transform and populate classes data
+        if (data.assignedClasses) {
+          const transformedClasses: Class[] = data.assignedClasses.map((cls: any) => ({
+            id: cls.id,
+            name: cls.name,
+            subject: 'Multiple Subjects',
+            students: [],
+            averageScore: 0,
+            topPerformer: 'N/A',
+            atRisk: 0
+          }));
+          setClasses(transformedClasses);
+        }
+
+        // Transform and populate students data
+        if (data.myStudents) {
+          const transformedStudents: Student[] = data.myStudents.map((student: any) => ({
+            id: student.id,
+            name: student.name,
+            admissionNo: student.studentId || 'N/A',
+            avatar: student.name.split(' ').map((n: string) => n[0]).join(''),
+            scores: { 
+              test1: undefined, 
+              test2: undefined, 
+              exam: undefined, 
+              total: Math.round(student.averageGrade || 0), 
+              grade: 'N/A' 
+            },
+            attendance: 0,
+            remarks: student.className,
+            parentContact: 'N/A',
+            parentEmail: 'N/A'
+          }));
+          setStudents(transformedStudents);
+        }
+
+        // Update assignments with recent submissions
+        if (data.recentSubmissions) {
+          const newAssignments: Assignment[] = data.recentSubmissions.map((submission: any, index: number) => ({
+            id: String(index),
+            title: submission.subjectName,
+            subject: submission.subjectName,
+            class: 'Class',
+            dueDate: new Date(submission.date).toLocaleDateString(),
+            totalMarks: 100,
+            submissions: 1,
+            totalStudents: 1,
+            status: 'closed'
+          }));
+          setAssignments(newAssignments);
+        }
       }
     } catch (error) {
       console.error('Error fetching teacher dashboard data:', error);
@@ -625,10 +677,10 @@ export default function TeacherDashboard() {
                   <div className="p-2 sm:p-3 rounded-xl bg-yellow-500/20">
                     <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
                   </div>
-                  <span className="text-xl sm:text-2xl font-bold text-white">{getAtRiskStudents()}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-white">{dashboardData?.pendingGrades || 0}</span>
                 </div>
-                <p className="text-gray-400 text-xs sm:text-sm">At-Risk Students</p>
-                <p className="text-white/60 text-xs mt-1">Need attention</p>
+                <p className="text-gray-400 text-xs sm:text-sm">Pending Grades</p>
+                <p className="text-white/60 text-xs mt-1">Need submission</p>
               </div>
             </div>
 
