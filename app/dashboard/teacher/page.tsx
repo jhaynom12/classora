@@ -77,6 +77,7 @@ interface UpcomingEvent {
 }
 
 export default function TeacherDashboard() {
+  // Force cache bust - deployed on 2026-04-29
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [schoolName, setSchoolName] = useState('Your School');
