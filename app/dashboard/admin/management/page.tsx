@@ -10,11 +10,12 @@ import {
   Upload, Download, Eye, CheckCircle, AlertCircle, XCircle,
   ChevronDown, MoreVertical, Mail, Phone, MapPin, UserPlus,
   UserCheck, UserX, RefreshCw, Shield, Database, Server, Cpu,
-  LogOut, Moon, Sun
+  LogOut, Moon, Sun, Loader
 } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import ActionButtons from '@/app/components/ActionButtons';
 import BulkUserManager from '@/app/components/BulkUserManager';
+import Toast, { showToast } from '@/app/components/Toast';
 
 // Types
 interface Class {
@@ -80,59 +81,32 @@ export default function AdminManagement() {
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Mock Data - Classes
-  const [classes, setClasses] = useState<Class[]>([
-    { id: '1', name: 'SS1', section: 'Science', students: 45, teacher: 'Mrs. Adebayo', status: 'active' },
-    { id: '2', name: 'SS1', section: 'Art', students: 38, teacher: 'Mr. Johnson', status: 'active' },
-    { id: '3', name: 'SS2', section: 'Science', students: 42, teacher: 'Dr. Okonkwo', status: 'active' },
-    { id: '4', name: 'SS2', section: 'Art', students: 35, teacher: 'Mrs. Eze', status: 'active' },
-    { id: '5', name: 'SS3', section: 'Science', students: 40, teacher: 'Prof. Williams', status: 'active' },
-    { id: '6', name: 'JSS1', section: 'A', students: 50, teacher: 'Mr. Adele', status: 'active' },
-    { id: '7', name: 'JSS1', section: 'B', students: 48, teacher: 'Mrs. Okafor', status: 'active' },
-  ]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Mock Data - Subjects
-  const [subjects, setSubjects] = useState<Subject[]>([
-    { id: '1', name: 'Mathematics', code: 'MTH101', classId: '1', teacherId: '1', isElective: false },
-    { id: '2', name: 'English', code: 'ENG101', classId: '1', teacherId: '2', isElective: false },
-    { id: '3', name: 'Physics', code: 'PHY101', classId: '1', teacherId: '3', isElective: false },
-    { id: '4', name: 'Chemistry', code: 'CHM101', classId: '1', teacherId: '4', isElective: false },
-    { id: '5', name: 'Biology', code: 'BIO101', classId: '1', teacherId: '5', isElective: false },
-    { id: '6', name: 'Economics', code: 'ECO101', classId: '2', teacherId: '6', isElective: true },
-  ]);
+  // Loading states for individual operations
+  const [isAddingClass, setIsAddingClass] = useState(false);
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [isAddingTeacher, setIsAddingTeacher] = useState(false);
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Mock Data - Teachers
-  const [teachers, setTeachers] = useState<Teacher[]>([
-    { id: '1', name: 'Mrs. Adebayo', email: 'adebayo@school.com', phone: '+234 802 345 6789', subject: 'Mathematics', classes: ['SS1 Science'], status: 'active' },
-    { id: '2', name: 'Mr. Johnson', email: 'johnson@school.com', phone: '+234 803 456 7890', subject: 'English', classes: ['SS1 Art'], status: 'active' },
-    { id: '3', name: 'Dr. Okonkwo', email: 'okonkwo@school.com', phone: '+234 804 567 8901', subject: 'Physics', classes: ['SS2 Science'], status: 'active' },
-    { id: '4', name: 'Mrs. Eze', email: 'eze@school.com', phone: '+234 805 678 9012', subject: 'Chemistry', classes: ['SS2 Art'], status: 'active' },
-    { id: '5', name: 'Prof. Williams', email: 'williams@school.com', phone: '+234 806 789 0123', subject: 'Biology', classes: ['SS3 Science'], status: 'active' },
-  ]);
-
-  // Mock Data - Students
-  const [students, setStudents] = useState<Student[]>([
-    { id: '1', name: 'Adeola K.', admissionNo: 'STU001', classId: '1', parentEmail: 'parent.adeola@email.com', parentPhone: '+234 802 345 6789', status: 'active' },
-    { id: '2', name: 'Bola T.', admissionNo: 'STU002', classId: '1', parentEmail: 'parent.bola@email.com', parentPhone: '+234 803 456 7890', status: 'active' },
-    { id: '3', name: 'Chidi O.', admissionNo: 'STU003', classId: '3', parentEmail: 'parent.chidi@email.com', parentPhone: '+234 804 567 8901', status: 'active' },
-    { id: '4', name: 'Esther N.', admissionNo: 'STU004', classId: '3', parentEmail: 'parent.esther@email.com', parentPhone: '+234 805 678 9012', status: 'active' },
-    { id: '5', name: 'Faith A.', admissionNo: 'STU005', classId: '2', parentEmail: 'parent.faith@email.com', parentPhone: '+234 806 789 0123', status: 'active' },
-  ]);
-
-  // Mock Data - Grading Rules
+  // Grading and assessment state
   const [gradingRules, setGradingRules] = useState<GradingRule[]>([
     { id: '1', grade: 'A', minScore: 70, maxScore: 100, remark: 'Excellent' },
     { id: '2', grade: 'B', minScore: 50, maxScore: 69, remark: 'Good' },
-    { id: '3', grade: 'C', minScore: 40, maxScore: 49, remark: 'Average' },
-    { id: '4', grade: 'D', minScore: 30, maxScore: 39, remark: 'Pass' },
-    { id: '5', grade: 'F', minScore: 0, maxScore: 29, remark: 'Fail' },
+    { id: '3', grade: 'C', minScore: 0, maxScore: 49, remark: 'Pass' }
   ]);
 
-  // Mock Data - Assessment Weights
   const [assessmentWeights, setAssessmentWeights] = useState<AssessmentWeight[]>([
     { id: '1', type: 'Test 1', percentage: 15 },
     { id: '2', type: 'Test 2', percentage: 15 },
-    { id: '3', type: 'Exam', percentage: 70 },
+    { id: '3', type: 'Final Exam', percentage: 70 }
   ]);
 
   // Form state for adding new items
@@ -141,14 +115,140 @@ export default function AdminManagement() {
   const [newTeacher, setNewTeacher] = useState({ name: '', email: '', phone: '', subject: '' });
   const [newStudent, setNewStudent] = useState({ name: '', admissionNo: '', classId: '', parentEmail: '', parentPhone: '' });
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('classora_token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+  };
+
   useEffect(() => {
     setMounted(true);
     const savedUser = localStorage.getItem('classora_user');
     const savedSchool = localStorage.getItem('classora_school_name');
-    if (savedUser) setUser(JSON.parse(savedUser));
-    else window.location.href = '/';
-    if (savedSchool) setSchoolName(savedSchool);
+    
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      console.log('Loaded user from localStorage:', parsedUser);
+      
+      if (savedSchool) setSchoolName(savedSchool);
+    } else {
+      console.log('No saved user, redirecting to login');
+      window.location.href = '/';
+    }
   }, []);
+
+  useEffect(() => {
+    if (user?.schoolId) {
+      console.log('User set with schoolId:', user.schoolId);
+      fetchSchoolInfo();
+      fetchAllData();
+    }
+  }, [user?.schoolId]);
+
+  const fetchSchoolInfo = async () => {
+    if (user?.schoolId) {
+      try {
+        const response = await fetch(`/api/school?schoolId=${user.schoolId}`, {
+          headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
+        });
+        if (response.ok) {
+          const school = await response.json();
+          setSchoolName(school.name);
+          localStorage.setItem('classora_school_name', school.name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch school info:', error);
+      }
+    }
+  };
+
+  const fetchAllData = async () => {
+    if (!user?.schoolId) return;
+    
+    setLoading(true);
+    console.log('Fetching all data for school:', user.schoolId);
+    try {
+      await Promise.all([
+        fetchClasses(),
+        fetchSubjects(),
+        fetchTeachers(),
+        fetchStudents()
+      ]);
+      console.log('All data fetched successfully');
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      showToast('Failed to load data', 'error');
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClasses = async () => {
+    const response = await fetch(`/api/classes?schoolId=${user.schoolId}`, {
+      headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setClasses(data.map((cls: any) => ({
+        id: cls.id,
+        name: cls.name,
+        section: cls.section,
+        students: cls._count?.enrollments || 0,
+        teacher: cls.teacher?.name || 'Not assigned',
+        status: cls.status
+      })));
+    }
+  };
+
+  const fetchSubjects = async () => {
+    const response = await fetch(`/api/subjects?schoolId=${user.schoolId}`, {
+      headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setSubjects(data);
+    }
+  };
+
+  const fetchTeachers = async () => {
+    const response = await fetch(`/api/teachers?schoolId=${user.schoolId}`, {
+      headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setTeachers(data.map((teacher: any) => ({
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        phone: teacher.phone || '',
+        subject: teacher.classSubjects?.[0]?.subject?.name || 'Not assigned',
+        classes: teacher.classSubjects?.map((cs: any) => cs.class.name) || [],
+        status: teacher.isActive ? 'active' : 'inactive'
+      })));
+    }
+  };
+
+  const fetchStudents = async () => {
+    const response = await fetch(`/api/students?schoolId=${user.schoolId}`, {
+      headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setStudents(data.map((student: any) => ({
+        id: student.id,
+        name: student.name,
+        admissionNo: student.studentId || '',
+        classId: student.enrollments?.[0]?.classId || '',
+        parentEmail: student.parentChildren?.[0]?.parent?.email || '',
+        parentPhone: student.parentChildren?.[0]?.parent?.phone || '',
+        status: student.isActive ? 'active' : 'inactive'
+      })));
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -188,64 +288,296 @@ export default function AdminManagement() {
     s.admissionNo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddClass = () => {
-    const newId = (classes.length + 1).toString();
-    setClasses([...classes, { ...newClass, id: newId, students: 0, status: 'active' }]);
-    setShowAddModal(false);
-    setNewClass({ name: '', section: '', teacher: '' });
+  const handleAddClass = async () => {
+    if (!newClass.name || !newClass.section) {
+      showToast('Please fill in all fields', 'warning');
+      return;
+    }
+
+    setIsAddingClass(true);
+    console.log('Adding class:', newClass);
+    
+    try {
+      const response = await fetch(`/api/classes?schoolId=${user.schoolId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: newClass.name,
+          section: newClass.section,
+          level: 1,
+          status: 'active'
+        })
+      });
+
+      console.log('Add class response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Class added successfully:', data);
+        showToast(`Class "${newClass.name}" added successfully!`, 'success');
+        await fetchClasses();
+        setShowAddModal(false);
+        setNewClass({ name: '', section: '', teacher: '' });
+      } else {
+        const error = await response.json();
+        console.error('Failed to add class:', error);
+        showToast(error.error || 'Failed to add class', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding class:', error);
+      showToast('Error adding class. Check console for details.', 'error');
+    } finally {
+      setIsAddingClass(false);
+    }
   };
 
-  const handleAddSubject = () => {
-    const newId = (subjects.length + 1).toString();
-    setSubjects([...subjects, { ...newSubject, id: newId }]);
-    setShowAddModal(false);
-    setNewSubject({ name: '', code: '', classId: '', teacherId: '', isElective: false });
+  const handleAddSubject = async () => {
+    if (!newSubject.name || !newSubject.code) {
+      showToast('Please fill in all fields', 'warning');
+      return;
+    }
+
+    setIsAddingSubject(true);
+    console.log('Adding subject:', newSubject);
+    
+    try {
+      const response = await fetch(`/api/subjects?schoolId=${user.schoolId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: newSubject.name,
+          code: newSubject.code,
+          isElective: newSubject.isElective
+        })
+      });
+
+      console.log('Add subject response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Subject added successfully:', data);
+        showToast(`Subject "${newSubject.name}" added successfully!`, 'success');
+        await fetchSubjects();
+        setShowAddModal(false);
+        setNewSubject({ name: '', code: '', classId: '', teacherId: '', isElective: false });
+      } else {
+        const error = await response.json();
+        console.error('Failed to add subject:', error);
+        showToast(error.error || 'Failed to add subject', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding subject:', error);
+      showToast('Error adding subject. Check console for details.', 'error');
+    } finally {
+      setIsAddingSubject(false);
+    }
   };
 
-  const handleAddTeacher = () => {
-    const newId = (teachers.length + 1).toString();
-    setTeachers([...teachers, { ...newTeacher, id: newId, classes: [], status: 'active' }]);
-    setShowAddModal(false);
-    setNewTeacher({ name: '', email: '', phone: '', subject: '' });
+  const handleAddTeacher = async () => {
+    if (!newTeacher.name || !newTeacher.email) {
+      showToast('Please fill in all fields', 'warning');
+      return;
+    }
+
+    setIsAddingTeacher(true);
+    console.log('Adding teacher:', newTeacher);
+    
+    try {
+      const response = await fetch(`/api/teachers?schoolId=${user.schoolId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: newTeacher.name,
+          email: newTeacher.email,
+          password: 'teacher123',
+          phone: newTeacher.phone,
+          staffId: `TCH${Date.now()}`
+        })
+      });
+
+      console.log('Add teacher response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Teacher added successfully:', data);
+        showToast(`Teacher "${newTeacher.name}" added successfully!`, 'success');
+        await fetchTeachers();
+        setShowAddModal(false);
+        setNewTeacher({ name: '', email: '', phone: '', subject: '' });
+      } else {
+        const error = await response.json();
+        console.error('Failed to add teacher:', error);
+        showToast(error.error || 'Failed to add teacher', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding teacher:', error);
+      showToast('Error adding teacher. Check console for details.', 'error');
+    } finally {
+      setIsAddingTeacher(false);
+    }
   };
 
-  const handleAddStudent = () => {
-    const newId = (students.length + 1).toString();
-    setStudents([...students, { ...newStudent, id: newId, status: 'active' }]);
-    setShowAddModal(false);
-    setNewStudent({ name: '', admissionNo: '', classId: '', parentEmail: '', parentPhone: '' });
+  const handleAddStudent = async () => {
+    if (!newStudent.name || !newStudent.admissionNo || !newStudent.classId) {
+      showToast('Please fill in all required fields', 'warning');
+      return;
+    }
+
+    setIsAddingStudent(true);
+    console.log('Adding student:', newStudent);
+    
+    try {
+      const sanitizedName = newStudent.name.trim().toLowerCase().replace(/\s+/g, '.');
+      const generatedEmail = `${sanitizedName}.${newStudent.admissionNo}@school.com`;
+      const response = await fetch(`/api/students?schoolId=${user.schoolId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: newStudent.name,
+          email: generatedEmail,
+          password: 'student123',
+          studentId: newStudent.admissionNo,
+          phone: newStudent.parentPhone,
+          classId: newStudent.classId,
+          parentEmail: newStudent.parentEmail
+        })
+      });
+
+      console.log('Add student response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Student added successfully:', data);
+        showToast(`Student "${newStudent.name}" enrolled successfully!`, 'success');
+        await fetchStudents();
+        setShowAddModal(false);
+        setNewStudent({ name: '', admissionNo: '', classId: '', parentEmail: '', parentPhone: '' });
+      } else {
+        const error = await response.json();
+        console.error('Failed to add student:', error);
+        showToast(error.error || 'Failed to add student', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding student:', error);
+      showToast('Error adding student. Check console for details.', 'error');
+    } finally {
+      setIsAddingStudent(false);
+    }
   };
 
-  const handleDelete = (section: string, id: string) => {
-    if (section === 'classes') setClasses(classes.filter(c => c.id !== id));
-    if (section === 'subjects') setSubjects(subjects.filter(s => s.id !== id));
-    if (section === 'teachers') setTeachers(teachers.filter(t => t.id !== id));
-    if (section === 'students') setStudents(students.filter(s => s.id !== id));
+  const handleDelete = async (section: string, id: string) => {
+    if (!confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+
+    setIsDeleting(id);
+    console.log('Deleting:', section, id);
+    
+    try {
+      let endpoint = '';
+      if (section === 'classes') endpoint = `/api/classes?classId=${id}`;
+      if (section === 'subjects') endpoint = `/api/subjects?subjectId=${id}`;
+      if (section === 'teachers') endpoint = `/api/teachers?teacherId=${id}`;
+      if (section === 'students') endpoint = `/api/students?studentId=${id}`;
+
+      if (endpoint) {
+        const response = await fetch(endpoint, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+
+        console.log('Delete response status:', response.status);
+
+        if (response.ok) {
+          console.log('Item deleted successfully');
+          showToast('Item deleted successfully!', 'success');
+          if (section === 'classes') await fetchClasses();
+          if (section === 'subjects') await fetchSubjects();
+          if (section === 'teachers') await fetchTeachers();
+          if (section === 'students') await fetchStudents();
+        } else {
+          const error = await response.json();
+          console.error('Failed to delete:', error);
+          showToast(error.error || 'Failed to delete item', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting:', error);
+      showToast('Error deleting item. Check console for details.', 'error');
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
   const handleOpenEditModal = (item: any) => {
-    setSelectedItem({ ...item });
+    console.log('Opening edit modal for:', item);
+    setSelectedItem(item);
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!selectedItem) return;
 
-    if (activeSection === 'classes') {
-      setClasses(classes.map((c) => c.id === selectedItem.id ? { ...c, ...selectedItem } : c));
-    }
-    if (activeSection === 'subjects') {
-      setSubjects(subjects.map((s) => s.id === selectedItem.id ? { ...s, ...selectedItem } : s));
-    }
-    if (activeSection === 'teachers') {
-      setTeachers(teachers.map((t) => t.id === selectedItem.id ? { ...t, ...selectedItem } : t));
-    }
-    if (activeSection === 'students') {
-      setStudents(students.map((s) => s.id === selectedItem.id ? { ...s, ...selectedItem } : s));
-    }
+    setIsSavingEdit(true);
+    console.log('Saving edit:', activeSection, selectedItem);
 
-    setShowEditModal(false);
-    setSelectedItem(null);
+    try {
+      let endpoint = '';
+      let body = {};
+
+      if (activeSection === 'classes') {
+        endpoint = `/api/classes?classId=${selectedItem.id}`;
+        body = { name: selectedItem.name, section: selectedItem.section };
+      }
+      if (activeSection === 'subjects') {
+        endpoint = `/api/subjects?subjectId=${selectedItem.id}`;
+        body = { name: selectedItem.name, code: selectedItem.code, isElective: selectedItem.isElective };
+      }
+      if (activeSection === 'teachers') {
+        endpoint = `/api/teachers?teacherId=${selectedItem.id}`;
+        body = { name: selectedItem.name, email: selectedItem.email, phone: selectedItem.phone };
+      }
+      if (activeSection === 'students') {
+        endpoint = `/api/students?studentId=${selectedItem.id}`;
+        body = { 
+          name: selectedItem.name, 
+          studentId: selectedItem.admissionNo,
+          phone: selectedItem.parentPhone,
+          isActive: selectedItem.status === 'active'
+        };
+      }
+
+      if (endpoint) {
+        const response = await fetch(endpoint, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(body)
+        });
+
+        console.log('Save edit response status:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Edit saved successfully:', data);
+          showToast('Changes saved successfully!', 'success');
+          if (activeSection === 'classes') await fetchClasses();
+          if (activeSection === 'subjects') await fetchSubjects();
+          if (activeSection === 'teachers') await fetchTeachers();
+          if (activeSection === 'students') await fetchStudents();
+          setShowEditModal(false);
+          setSelectedItem(null);
+        } else {
+          const error = await response.json();
+          console.error('Failed to save edit:', error);
+          showToast(error.error || 'Failed to save changes', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving edit:', error);
+      showToast('Error saving changes. Check console for details.', 'error');
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -270,6 +602,7 @@ export default function AdminManagement() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+      <Toast />
       <ActionButtons />
 
       {/* Header */}
@@ -343,7 +676,8 @@ export default function AdminManagement() {
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium hover:shadow-xl transition-all flex items-center gap-2 justify-center"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium hover:shadow-xl transition-all flex items-center gap-2 justify-center disabled:opacity-50"
+            disabled={isAddingClass || isAddingSubject || isAddingTeacher || isAddingStudent}
           >
             <Plus className="w-4 h-4" />
             Add New {activeSection.slice(0, -1).charAt(0).toUpperCase() + activeSection.slice(0, -1).slice(1)}
@@ -391,11 +725,19 @@ export default function AdminManagement() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => handleOpenEditModal(classItem)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                          <button 
+                            onClick={() => handleOpenEditModal(classItem)} 
+                            className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                            disabled={isSavingEdit || isDeleting === classItem.id}
+                          >
                             <Edit className="w-4 h-4 text-gray-400" />
                           </button>
-                          <button onClick={() => handleDelete('classes', classItem.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
-                            <Trash2 className="w-4 h-4 text-red-400" />
+                          <button 
+                            onClick={() => handleDelete('classes', classItem.id)} 
+                            className="p-1 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            disabled={isDeleting === classItem.id}
+                          >
+                            {isDeleting === classItem.id ? <Loader className="w-4 h-4 text-red-400 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
                           </button>
                         </div>
                       </td>
@@ -439,11 +781,19 @@ export default function AdminManagement() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-2">
-                            <button onClick={() => handleOpenEditModal(subject)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                            <button 
+                              onClick={() => handleOpenEditModal(subject)} 
+                              className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                              disabled={isSavingEdit || isDeleting === subject.id}
+                            >
                               <Edit className="w-4 h-4 text-gray-400" />
                             </button>
-                            <button onClick={() => handleDelete('subjects', subject.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
-                              <Trash2 className="w-4 h-4 text-red-400" />
+                            <button 
+                              onClick={() => handleDelete('subjects', subject.id)} 
+                              className="p-1 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                              disabled={isDeleting === subject.id}
+                            >
+                              {isDeleting === subject.id ? <Loader className="w-4 h-4 text-red-400 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
                             </button>
                           </div>
                         </td>
@@ -487,11 +837,19 @@ export default function AdminManagement() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => handleOpenEditModal(teacher)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                          <button 
+                            onClick={() => handleOpenEditModal(teacher)} 
+                            className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                            disabled={isSavingEdit || isDeleting === teacher.id}
+                          >
                             <Edit className="w-4 h-4 text-gray-400" />
                           </button>
-                          <button onClick={() => handleDelete('teachers', teacher.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
-                            <Trash2 className="w-4 h-4 text-red-400" />
+                          <button 
+                            onClick={() => handleDelete('teachers', teacher.id)} 
+                            className="p-1 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            disabled={isDeleting === teacher.id}
+                          >
+                            {isDeleting === teacher.id ? <Loader className="w-4 h-4 text-red-400 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
                           </button>
                         </div>
                        </td>
@@ -536,11 +894,19 @@ export default function AdminManagement() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-2">
-                            <button onClick={() => handleOpenEditModal(student)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                            <button 
+                              onClick={() => handleOpenEditModal(student)} 
+                              className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                              disabled={isSavingEdit || isDeleting === student.id}
+                            >
                               <Edit className="w-4 h-4 text-gray-400" />
                             </button>
-                            <button onClick={() => handleDelete('students', student.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
-                              <Trash2 className="w-4 h-4 text-red-400" />
+                            <button 
+                              onClick={() => handleDelete('students', student.id)} 
+                              className="p-1 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                              disabled={isDeleting === student.id}
+                            >
+                              {isDeleting === student.id ? <Loader className="w-4 h-4 text-red-400 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
                             </button>
                           </div>
                         </td>
@@ -688,57 +1054,85 @@ export default function AdminManagement() {
               {/* Add Class Form */}
               {activeSection === 'classes' && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Class Name (e.g., SS1, SS2, JSS1)" value={newClass.name} onChange={(e) => setNewClass({ ...newClass, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="text" placeholder="Section (e.g., Science, Art, A, B)" value={newClass.section} onChange={(e) => setNewClass({ ...newClass, section: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <select value={newClass.teacher} onChange={(e) => setNewClass({ ...newClass, teacher: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Class Teacher</option>
-                    {teachers.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  <input type="text" placeholder="Class Name (e.g., SS1, SS2, JSS1)" value={newClass.name} onChange={(e) => setNewClass({ ...newClass, name: e.target.value })} disabled={isAddingClass} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="text" placeholder="Section (e.g., Science, Art, A, B)" value={newClass.section} onChange={(e) => setNewClass({ ...newClass, section: e.target.value })} disabled={isAddingClass} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <select value={newClass.teacher} onChange={(e) => setNewClass({ ...newClass, teacher: e.target.value })} disabled={isAddingClass} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none disabled:opacity-50">
+                    <option value="" className="bg-gray-800">Select Class Teacher</option>
+                    {teachers.map(t => <option key={t.id} value={t.name} className="bg-gray-800">{t.name}</option>)}
                   </select>
-                  <button onClick={handleAddClass} className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">Create Class</button>
+                  <button 
+                    onClick={handleAddClass} 
+                    disabled={isAddingClass}
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isAddingClass ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {isAddingClass ? 'Creating...' : 'Create Class'}
+                  </button>
                 </div>
               )}
 
               {/* Add Subject Form */}
               {activeSection === 'subjects' && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Subject Name" value={newSubject.name} onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="text" placeholder="Subject Code" value={newSubject.code} onChange={(e) => setNewSubject({ ...newSubject, code: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <select value={newSubject.classId} onChange={(e) => setNewSubject({ ...newSubject, classId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Class</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                  <input type="text" placeholder="Subject Name" value={newSubject.name} onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })} disabled={isAddingSubject} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="text" placeholder="Subject Code" value={newSubject.code} onChange={(e) => setNewSubject({ ...newSubject, code: e.target.value })} disabled={isAddingSubject} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <select value={newSubject.classId} onChange={(e) => setNewSubject({ ...newSubject, classId: e.target.value })} disabled={isAddingSubject} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none disabled:opacity-50">
+                    <option value="" className="bg-gray-800">Select Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id} className="bg-gray-800">{c.name} {c.section}</option>)}
                   </select>
-                  <select value={newSubject.teacherId} onChange={(e) => setNewSubject({ ...newSubject, teacherId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Teacher</option>
-                    {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  <select value={newSubject.teacherId} onChange={(e) => setNewSubject({ ...newSubject, teacherId: e.target.value })} disabled={isAddingSubject} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none disabled:opacity-50">
+                    <option value="" className="bg-gray-800">Select Teacher</option>
+                    {teachers.map(t => <option key={t.id} value={t.id} className="bg-gray-800">{t.name}</option>)}
                   </select>
-                  <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={newSubject.isElective} onChange={(e) => setNewSubject({ ...newSubject, isElective: e.target.checked })} className="w-4 h-4" /><span className="text-gray-300">Elective Subject</span></label>
-                  <button onClick={handleAddSubject} className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">Create Subject</button>
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={newSubject.isElective} onChange={(e) => setNewSubject({ ...newSubject, isElective: e.target.checked })} disabled={isAddingSubject} className="w-4 h-4" /><span className="text-gray-300">Elective Subject</span></label>
+                  <button 
+                    onClick={handleAddSubject} 
+                    disabled={isAddingSubject}
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isAddingSubject ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {isAddingSubject ? 'Creating...' : 'Create Subject'}
+                  </button>
                 </div>
               )}
 
               {/* Add Teacher Form */}
               {activeSection === 'teachers' && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Full Name" value={newTeacher.name} onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="email" placeholder="Email Address" value={newTeacher.email} onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="tel" placeholder="Phone Number" value={newTeacher.phone} onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="text" placeholder="Subject Specialization" value={newTeacher.subject} onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <button onClick={handleAddTeacher} className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">Add Teacher</button>
+                  <input type="text" placeholder="Full Name" value={newTeacher.name} onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })} disabled={isAddingTeacher} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="email" placeholder="Email Address" value={newTeacher.email} onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })} disabled={isAddingTeacher} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="tel" placeholder="Phone Number" value={newTeacher.phone} onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })} disabled={isAddingTeacher} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="text" placeholder="Subject Specialization" value={newTeacher.subject} onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })} disabled={isAddingTeacher} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <button 
+                    onClick={handleAddTeacher} 
+                    disabled={isAddingTeacher}
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isAddingTeacher ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {isAddingTeacher ? 'Adding...' : 'Add Teacher'}
+                  </button>
                 </div>
               )}
 
               {/* Add Student Form */}
               {activeSection === 'students' && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Full Name" value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="text" placeholder="Admission Number" value={newStudent.admissionNo} onChange={(e) => setNewStudent({ ...newStudent, admissionNo: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <select value={newStudent.classId} onChange={(e) => setNewStudent({ ...newStudent, classId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Class</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                  <input type="text" placeholder="Full Name" value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} disabled={isAddingStudent} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="text" placeholder="Admission Number" value={newStudent.admissionNo} onChange={(e) => setNewStudent({ ...newStudent, admissionNo: e.target.value })} disabled={isAddingStudent} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <select value={newStudent.classId} onChange={(e) => setNewStudent({ ...newStudent, classId: e.target.value })} disabled={isAddingStudent} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none disabled:opacity-50">
+                    <option value="" className="bg-gray-800">Select Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id} className="bg-gray-800">{c.name} {c.section}</option>)}
                   </select>
-                  <input type="email" placeholder="Parent Email" value={newStudent.parentEmail} onChange={(e) => setNewStudent({ ...newStudent, parentEmail: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <input type="tel" placeholder="Parent Phone" value={newStudent.parentPhone} onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
-                  <button onClick={handleAddStudent} className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">Enroll Student</button>
+                  <input type="email" placeholder="Parent Email" value={newStudent.parentEmail} onChange={(e) => setNewStudent({ ...newStudent, parentEmail: e.target.value })} disabled={isAddingStudent} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <input type="tel" placeholder="Parent Phone" value={newStudent.parentPhone} onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })} disabled={isAddingStudent} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none disabled:opacity-50" />
+                  <button 
+                    onClick={handleAddStudent} 
+                    disabled={isAddingStudent}
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isAddingStudent ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {isAddingStudent ? 'Enrolling...' : 'Enroll Student'}
+                  </button>
                 </div>
               )}
             </motion.div>
@@ -773,8 +1167,8 @@ export default function AdminManagement() {
                   <input type="text" placeholder="Section" value={selectedItem.section || ''} onChange={(e) => setSelectedItem({ ...selectedItem, section: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <input type="text" placeholder="Class Teacher" value={selectedItem.teacher || ''} onChange={(e) => setSelectedItem({ ...selectedItem, teacher: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <select value={selectedItem.status || 'active'} onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active" className="bg-gray-800">Active</option>
+                    <option value="inactive" className="bg-gray-800">Inactive</option>
                   </select>
                 </div>
               )}
@@ -784,12 +1178,12 @@ export default function AdminManagement() {
                   <input type="text" placeholder="Subject Name" value={selectedItem.name || ''} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <input type="text" placeholder="Subject Code" value={selectedItem.code || ''} onChange={(e) => setSelectedItem({ ...selectedItem, code: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <select value={selectedItem.classId || ''} onChange={(e) => setSelectedItem({ ...selectedItem, classId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Class</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                    <option value="" className="bg-gray-800">Select Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id} className="bg-gray-800">{c.name} {c.section}</option>)}
                   </select>
                   <select value={selectedItem.teacherId || ''} onChange={(e) => setSelectedItem({ ...selectedItem, teacherId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Teacher</option>
-                    {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    <option value="" className="bg-gray-800">Select Teacher</option>
+                    {teachers.map(t => <option key={t.id} value={t.id} className="bg-gray-800">{t.name}</option>)}
                   </select>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={selectedItem.isElective || false} onChange={(e) => setSelectedItem({ ...selectedItem, isElective: e.target.checked })} className="w-4 h-4" />
@@ -805,8 +1199,8 @@ export default function AdminManagement() {
                   <input type="tel" placeholder="Phone Number" value={selectedItem.phone || ''} onChange={(e) => setSelectedItem({ ...selectedItem, phone: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <input type="text" placeholder="Subject Specialization" value={selectedItem.subject || ''} onChange={(e) => setSelectedItem({ ...selectedItem, subject: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <select value={selectedItem.status || 'active'} onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active" className="bg-gray-800">Active</option>
+                    <option value="inactive" className="bg-gray-800">Inactive</option>
                   </select>
                 </div>
               )}
@@ -816,21 +1210,34 @@ export default function AdminManagement() {
                   <input type="text" placeholder="Full Name" value={selectedItem.name || ''} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <input type="text" placeholder="Admission Number" value={selectedItem.admissionNo || ''} onChange={(e) => setSelectedItem({ ...selectedItem, admissionNo: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <select value={selectedItem.classId || ''} onChange={(e) => setSelectedItem({ ...selectedItem, classId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="">Select Class</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                    <option value="" className="bg-gray-800">Select Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id} className="bg-gray-800">{c.name} {c.section}</option>)}
                   </select>
                   <input type="email" placeholder="Parent Email" value={selectedItem.parentEmail || ''} onChange={(e) => setSelectedItem({ ...selectedItem, parentEmail: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <input type="tel" placeholder="Parent Phone" value={selectedItem.parentPhone || ''} onChange={(e) => setSelectedItem({ ...selectedItem, parentPhone: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
                   <select value={selectedItem.status || 'active'} onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active" className="bg-gray-800">Active</option>
+                    <option value="inactive" className="bg-gray-800">Inactive</option>
                   </select>
                 </div>
               )}
 
               <div className="mt-4 flex justify-end gap-3">
-                <button onClick={handleCloseEditModal} className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">Cancel</button>
-                <button onClick={handleSaveEdit} className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-xl transition-all">Save Changes</button>
+                <button 
+                  onClick={handleCloseEditModal} 
+                  disabled={isSavingEdit}
+                  className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveEdit} 
+                  disabled={isSavingEdit}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSavingEdit ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {isSavingEdit ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>

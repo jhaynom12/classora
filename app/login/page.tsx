@@ -113,9 +113,13 @@ export default function Home() {
         setError(data.error || 'Login failed');
         return;
       }
+      const userWithSchoolId = {
+        ...data.user,
+        schoolId: data.user.schoolId || data.school?.id
+      };
       localStorage.setItem('classora_token', data.token);
-      localStorage.setItem('classora_user', JSON.stringify(data.user));
-      setLoggedInUser(data.user);
+      localStorage.setItem('classora_user', JSON.stringify(userWithSchoolId));
+      setLoggedInUser(userWithSchoolId);
       const dashboardMap: { [key: string]: string } = {
         student: '/dashboard/student',
         teacher: '/dashboard/teacher',

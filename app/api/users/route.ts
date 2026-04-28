@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const schoolId = searchParams.get('schoolId');
+    const schoolId = searchParams.get('schoolId') || request.headers.get('x-user-school');
     const role = searchParams.get('role');
     
     const where: any = {};

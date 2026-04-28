@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const schoolId = searchParams.get('schoolId');
+    const schoolId = searchParams.get('schoolId') || request.headers.get('x-user-school');
 
     if (!schoolId) {
       return NextResponse.json({ error: 'School ID required' }, { status: 400 });
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const schoolId = searchParams.get('schoolId');
+    const schoolId = searchParams.get('schoolId') || request.headers.get('x-user-school');
 
     if (!schoolId) {
       return NextResponse.json({ error: 'School ID required' }, { status: 400 });

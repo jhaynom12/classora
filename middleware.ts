@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'secret');
 
 // Routes that don't require authentication
-const publicRoutes = ['/', '/api/auth/login', '/api/auth/register', '/api/seed', '/api/schools'];
+const publicRoutes = ['/', '/api/auth/login', '/api/auth/register', '/api/seed', '/api/schools', '/api/school/settings'];
 
 // Role-based route access
 const roleRoutes: { [key: string]: string[] } = {
@@ -44,9 +44,11 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Verify JWT token
-    const decoded = await jwtVerify(token, secret);
-    const userId = decoded.payload.userId as string;
-    const role = decoded.payload.role as string;
+    const verified = await jwtVerify(token, secret);
+    const decoded = verified.payload as any;
+    const userId = decoded.userId as string;
+    const role = decoded.role as string;
+    const schoolId = decoded.schoolId as string | undefined;
 
     // Check role-based access
     const allowedRoutes = [
@@ -74,6 +76,9 @@ export async function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('X-User-ID', userId);
     requestHeaders.set('X-User-Role', role);
+    if (schoolId) {
+      requestHeaders.set('X-User-School', schoolId);
+    }
 
     return NextResponse.next({
       request: {

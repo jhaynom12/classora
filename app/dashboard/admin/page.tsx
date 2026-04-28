@@ -84,6 +84,7 @@ export default function AdminDashboard() {
   const [schoolName, setSchoolName] = useState('Your School');
   const [editingSchool, setEditingSchool] = useState(false);
   const [tempSchoolName, setTempSchoolName] = useState('');
+  const [isSavingSchoolName, setIsSavingSchoolName] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showProfile, setShowProfile] = useState(false);
@@ -99,6 +100,13 @@ export default function AdminDashboard() {
   const [fetchedUsers, setFetchedUsers] = useState<UserData[]>([]);
   const [fetchedFeeStructures, setFetchedFeeStructures] = useState<FeeStructure[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [schoolSettings, setSchoolSettings] = useState({
+    gradingScale: 'A:70-100,B:50-69,C:0-49',
+    assessmentWeights: 'test1:15,test2:15,exam:70',
+    academicYear: '2024/2025',
+    currentTerm: 'First Term'
+  });
+  const [loadingSettings, setLoadingSettings] = useState(false);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('classora_token');
@@ -113,6 +121,14 @@ export default function AdminDashboard() {
   const [selectedAssignmentMethod, setSelectedAssignmentMethod] = useState('');
   const [selectedStudentMethod, setSelectedStudentMethod] = useState('');
   const [selectedParentMethod, setSelectedParentMethod] = useState('');
+
+  // Add user form state
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'student' as 'student' | 'teacher' | 'parent' | 'staff'
+  });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   const defaultStats: SchoolStats = {
     totalStudents: 0, totalTeachers: 0, totalStaff: 0, totalParents: 0,
@@ -130,13 +146,13 @@ export default function AdminDashboard() {
     try {
       // Fetch classes for stats
       const classesResponse = await fetch(`/api/classes?schoolId=${user.schoolId}`, {
-        headers: getAuthHeaders()
+        headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
       });
       const classesData = classesResponse.ok ? await classesResponse.json() : [];
 
       // Fetch users for stats
       const usersResponse = await fetch(`/api/users?schoolId=${user.schoolId}`, {
-        headers: getAuthHeaders()
+        headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
       });
       const usersData = usersResponse.ok ? await usersResponse.json() : [];
 
@@ -233,24 +249,78 @@ export default function AdminDashboard() {
     const savedUser = localStorage.getItem('classora_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
-      fetchSchoolInfo();
-      fetchStats();
-      fetchFeeStructures();
     } else {
       window.location.href = '/';
     }
   }, []);
 
+  useEffect(() => {
+    if (user?.schoolId) {
+      fetchSchoolInfo();
+      fetchSchoolSettings();
+      fetchStats();
+      fetchFeeStructures();
+    }
+  }, [user?.schoolId]);
+
   const fetchSchoolInfo = async () => {
     if (user?.schoolId) {
       try {
-        const response = await fetch(`/api/school?schoolId=${user.schoolId}`);
+        const response = await fetch(`/api/school?schoolId=${user.schoolId}`, {
+          headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
+        });
         if (response.ok) {
           const school = await response.json();
           setSchoolName(school.name);
+          localStorage.setItem('classora_school_name', school.name);
         }
       } catch (error) {
         console.error('Failed to fetch school info:', error);
+      }
+    }
+  };
+
+  const fetchSchoolSettings = async () => {
+    if (user?.schoolId) {
+      setLoadingSettings(true);
+      try {
+        const response = await fetch(`/api/school/settings?schoolId=${user.schoolId}`, {
+          headers: getAuthHeaders()
+        });
+        if (response.ok) {
+          const settings = await response.json();
+          setSchoolSettings(settings);
+        }
+      } catch (error) {
+        console.error('Failed to fetch school settings:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    }
+  };
+
+  const saveSchoolSettings = async (newSettings: Partial<typeof schoolSettings>) => {
+    if (user?.schoolId) {
+      setLoadingSettings(true);
+      try {
+        const response = await fetch(`/api/school/settings?schoolId=${user.schoolId}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(newSettings)
+        });
+        if (response.ok) {
+          const updatedSettings = await response.json();
+          setSchoolSettings(updatedSettings);
+          setErrorMessage('');
+        } else {
+          const error = await response.json();
+          setErrorMessage(error.error || 'Failed to update school settings');
+        }
+      } catch (error) {
+        console.error('Failed to save school settings:', error);
+        setErrorMessage('Failed to save school settings');
+      } finally {
+        setLoadingSettings(false);
       }
     }
   };
@@ -263,25 +333,79 @@ export default function AdminDashboard() {
 
   const saveSchoolName = async () => {
     const nameToSave = editingSchool ? tempSchoolName.trim() : schoolName.trim();
-    if (nameToSave && user?.schoolId) {
-      try {
-        const response = await fetch(`/api/school?schoolId=${user.schoolId}`, {
-          method: 'PUT',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ name: nameToSave })
-        });
-        if (response.ok) {
-          setSchoolName(nameToSave);
-          setEditingSchool(false);
-          setErrorMessage('');
-        } else {
-          const error = await response.json();
-          setErrorMessage(error.error || 'Failed to update school name');
-        }
-      } catch (error) {
-        console.error('Failed to update school name:', error);
-        setErrorMessage('Network error while updating school name');
+    if (!nameToSave || !user?.schoolId) {
+      setErrorMessage('School name cannot be empty.');
+      return;
+    }
+
+    console.log('Save button clicked');
+    setIsSavingSchoolName(true);
+
+    try {
+      const response = await fetch(`/api/settings/school?schoolId=${user.schoolId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ name: nameToSave })
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (response.ok) {
+        setSchoolName(nameToSave);
+        localStorage.setItem('classora_school_name', nameToSave);
+        setEditingSchool(false);
+        setErrorMessage('');
+        alert('School name saved successfully!');
+      } else {
+        const message = data.error || 'Failed to update school name';
+        setErrorMessage(message);
+        alert('Error: ' + message);
       }
+    } catch (error) {
+      console.error('Failed to update school name:', error);
+      const message = (error as Error).message || 'Network error while updating school name';
+      setErrorMessage(message);
+      alert('Failed to save: ' + message);
+    } finally {
+      setIsSavingSchoolName(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.name.trim() || !newUser.email.trim() || !user?.schoolId) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    setIsCreatingUser(true);
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ...newUser,
+          schoolId: user.schoolId
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNewUser({ name: '', email: '', role: 'student' });
+        setShowAddUser(false);
+        alert('User created successfully!');
+        // Refresh the stats to show the new user
+        fetchStats();
+      } else {
+        alert(data.error || 'Failed to create user');
+      }
+    } catch (error) {
+      console.error('Create user error:', error);
+      alert('Failed to create user');
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -840,7 +964,9 @@ export default function AdminDashboard() {
                     <label className="block text-gray-400 text-sm mb-2">School Name</label>
                     <div className="flex items-center gap-2">
                       <input type="text" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="flex-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none" />
-                      <button type="button" onClick={saveSchoolName} className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors">Save</button>
+                      <button type="button" onClick={saveSchoolName} disabled={isSavingSchoolName} className="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors disabled:opacity-50">
+                        {isSavingSchoolName ? 'Saving...' : 'Save'}
+                      </button>
                     </div>
                   </div>
                   <div>
@@ -851,15 +977,50 @@ export default function AdminDashboard() {
               </div>
               <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 p-6">
                 <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-purple-400" />Grading System</h3>
-                <div className="space-y-2">
-                  {[{ grade: 'A', min: 70, max: 100 }, { grade: 'B', min: 50, max: 69 }, { grade: 'C', min: 40, max: 49 }].map((grade) => (
-                    <div key={grade.grade} className="flex items-center gap-4">
-                      <span className="w-12 text-white font-bold">{grade.grade}</span>
-                      <input type="number" defaultValue={grade.min} className="w-20 px-2 py-1 rounded bg-white/5 border border-white/10 text-white text-center" />
-                      <span className="text-gray-400">to</span>
-                      <input type="number" defaultValue={grade.max} className="w-20 px-2 py-1 rounded bg-white/5 border border-white/10 text-white text-center" />
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Grading Scale (format: A:70-100,B:50-69,C:0-49)</label>
+                    <input 
+                      type="text" 
+                      value={schoolSettings.gradingScale} 
+                      onChange={(e) => setSchoolSettings(prev => ({ ...prev, gradingScale: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Assessment Weights (format: test1:15,test2:15,exam:70)</label>
+                    <input 
+                      type="text" 
+                      value={schoolSettings.assessmentWeights} 
+                      onChange={(e) => setSchoolSettings(prev => ({ ...prev, assessmentWeights: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Academic Year</label>
+                    <input 
+                      type="text" 
+                      value={schoolSettings.academicYear} 
+                      onChange={(e) => setSchoolSettings(prev => ({ ...prev, academicYear: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Current Term</label>
+                    <input 
+                      type="text" 
+                      value={schoolSettings.currentTerm} 
+                      onChange={(e) => setSchoolSettings(prev => ({ ...prev, currentTerm: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none" 
+                    />
+                  </div>
+                  <button 
+                    onClick={() => saveSchoolSettings(schoolSettings)}
+                    disabled={loadingSettings}
+                    className="w-full px-4 py-2 rounded-xl bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                  >
+                    {loadingSettings ? 'Saving...' : 'Save Settings'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -937,14 +1098,37 @@ export default function AdminDashboard() {
               className="relative w-full max-w-md rounded-2xl bg-white/10 backdrop-blur-2xl border border-white/20 p-6"
             >
               <h3 className="text-xl font-bold text-white mb-4">Add New User</h3>
-              <input type="text" placeholder="Full Name" className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white" />
-              <input type="email" placeholder="Email" className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white" />
-              <select className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white">
-                <option>Student</option>
-                <option>Teacher</option>
-                <option>Parent</option>
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={newUser.name}
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+              <input 
+                type="email" 
+                placeholder="Email" 
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+              <select 
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value as any })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none"
+              >
+                <option value="student" className="bg-gray-800">Student</option>
+                <option value="teacher" className="bg-gray-800">Teacher</option>
+                <option value="parent" className="bg-gray-800">Parent</option>
+                <option value="staff" className="bg-gray-800">Staff</option>
               </select>
-              <button className="w-full py-2 rounded-xl bg-blue-500/20 text-blue-400">Create User</button>
+              <button 
+                onClick={handleAddUser}
+                disabled={isCreatingUser}
+                className="w-full py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 disabled:opacity-50 transition-colors"
+              >
+                {isCreatingUser ? 'Creating...' : 'Create User'}
+              </button>
             </motion.div>
           </motion.div>
         )}
