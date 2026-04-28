@@ -44,14 +44,34 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, email, password, role, schoolId, studentId, staffId } = body;
     
+    // Validate required fields
+    if (!name || !email || !password || !schoolId) {
+      return NextResponse.json(
+        { error: 'Missing required fields: name, email, password, schoolId' },
+        { status: 400 }
+      );
+    }
+
+    // Check if school exists
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId }
+    });
+    
+    if (!school) {
+      return NextResponse.json(
+        { error: 'School not found' },
+        { status: 404 }
+      );
+    }
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: email.toLowerCase(),
         password: hashedPassword,
-        role,
+        role: role || 'student',
         schoolId,
         studentId: role === 'student' ? studentId : null,
         staffId: role === 'teacher' || role === 'admin' ? staffId : null
@@ -62,11 +82,19 @@ export async function POST(request: Request) {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      schoolId: user.schoolId
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('User creation error:', error);
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Email already exists' },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
-      { error: 'Failed to create user' },
+      { error: error.message || 'Failed to create user' },
       { status: 500 }
     );
   }

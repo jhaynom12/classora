@@ -143,8 +143,8 @@ export default function AdminManagement() {
   useEffect(() => {
     if (user?.schoolId) {
       console.log('User set with schoolId:', user.schoolId);
-      fetchSchoolInfo();
-      fetchAllData();
+      fetchSchoolInfo().catch(err => console.error('School info error:', err));
+      fetchAllData().catch(err => console.error('Data fetch error:', err));
     }
   }, [user?.schoolId]);
 

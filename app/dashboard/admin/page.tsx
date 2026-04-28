@@ -158,11 +158,11 @@ export default function AdminDashboard() {
       const usersData = usersResponse.ok ? await usersResponse.json() : [];
 
       // Calculate stats from API data
-      const totalStudents = usersData.filter((u: any) => u.role === 'student').length;
-      const totalTeachers = usersData.filter((u: any) => u.role === 'teacher').length;
-      const totalStaff = usersData.filter((u: any) => u.role === 'staff').length;
-      const totalParents = usersData.filter((u: any) => u.role === 'parent').length;
-      const totalClasses = classesData.length;
+      const totalStudents = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'student').length : 0;
+      const totalTeachers = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'teacher').length : 0;
+      const totalStaff = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'staff').length : 0;
+      const totalParents = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'parent').length : 0;
+      const totalClasses = Array.isArray(classesData) ? classesData.length : 0;
 
       // Transform classes data
       const transformedClasses = classesData.map((cls: any) => ({
@@ -257,10 +257,14 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetchSchoolInfo();
-      fetchSchoolSettings();
-      fetchStats();
-      fetchFeeStructures();
+      try {
+        fetchSchoolInfo().catch(err => console.error('School info:', err));
+        fetchSchoolSettings().catch(err => console.error('Settings:', err));
+        fetchStats().catch(err => console.error('Stats:', err));
+        fetchFeeStructures().catch(err => console.error('Fees:', err));
+      } catch (error) {
+        console.error('Dashboard init:', error);
+      }
     }
   }, [user?.schoolId]);
 
@@ -375,8 +379,8 @@ export default function AdminDashboard() {
   };
 
   const handleAddUser = async () => {
-    if (!newUser.name.trim() || !newUser.email.trim() || !user?.schoolId) {
-      alert('Please fill in all required fields.');
+    if (!newUser.name.trim() || !newUser.email.trim() || !newUser.password.trim() || !user?.schoolId) {
+      alert('Please fill in all required fields (name, email, password).');
       return;
     }
 
