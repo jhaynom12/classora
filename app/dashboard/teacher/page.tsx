@@ -107,6 +107,8 @@ export default function TeacherDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [marksheetData, setMarksheetData] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   // Sample classes data (fallback when no data is fetched)
@@ -154,11 +156,35 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     if (user?.id) {
+      fetchDashboardData();
       fetchAssignments();
       fetchClasses();
       fetchStudents();
     }
   }, [user]);
+
+  const fetchDashboardData = async () => {
+    if (!user?.id) return;
+
+    setLoadingDashboard(true);
+    try {
+      const response = await fetch('/api/dashboard/teacher', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching teacher dashboard data:', error);
+    } finally {
+      setLoadingDashboard(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();

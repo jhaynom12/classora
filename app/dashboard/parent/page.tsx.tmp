@@ -1,4 +1,4 @@
-ï»¿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -167,6 +167,301 @@ export default function ParentDashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
+      ],
+      recentActivities: [
+        { id: '1', activity: 'Submitted Mathematics assignment', date: '2024-04-14', type: 'submission' },
+        { id: '2', activity: 'Scored 85% in Mathematics test', date: '2024-04-13', type: 'score', score: 85 },
+        { id: '3', activity: 'Attended Physics practical', date: '2024-04-12', type: 'attendance' },
+        { id: '4', activity: 'Achieved Top Performer award', date: '2024-04-10', type: 'achievement' },
+      ],
+      upcomingEvents: [
+        { id: '1', title: 'Mid-Term Examination', date: '2024-04-20', type: 'exam' },
+        { id: '2', title: 'Parent-Teacher Meeting', date: '2024-04-25', type: 'meeting' },
+      ],
+      feeStatus: {
+        term: 'Second Term 2024',
+        amount: 150000,
+        paid: 150000,
+        due: 0,
+        status: 'paid',
+        dueDate: '2024-03-30',
+      },
+      results: [
+        {
+          id: '1',
+          term: 'First Term',
+          academicYear: '2023/2024',
+          total: 78.5,
+          average: 78.5,
+          grade: 'B+',
+          position: 8,
+          outOf: 45,
+          publishedAt: '2024-01-15',
+          subjectResults: {
+            'Mathematics': { ca1: 25, ca2: 28, exam: 32, total: 85, grade: 'A' },
+            'English': { ca1: 22, ca2: 24, exam: 32, total: 78, grade: 'B+' },
+            'Physics': { ca1: 20, ca2: 22, exam: 30, total: 72, grade: 'B' },
+            'Chemistry': { ca1: 18, ca2: 20, exam: 30, total: 68, grade: 'B-' },
+            'Biology': { ca1: 24, ca2: 26, exam: 32, total: 82, grade: 'A-' },
+          },
+          teacherComment: 'Adeola has shown good progress this term. Focus on Chemistry to improve overall performance.',
+          principalComment: 'Keep up the good work. Consistent effort will lead to better results.',
+          status: 'published',
+        },
+        {
+          id: '2',
+          term: 'Second Term',
+          academicYear: '2023/2024',
+          total: 82.3,
+          average: 82.3,
+          grade: 'A-',
+          position: 5,
+          outOf: 45,
+          publishedAt: '2024-04-15',
+          subjectResults: {
+            'Mathematics': { ca1: 26, ca2: 28, exam: 35, total: 89, grade: 'A' },
+            'English': { ca1: 24, ca2: 25, exam: 34, total: 83, grade: 'A-' },
+            'Physics': { ca1: 22, ca2: 24, exam: 32, total: 78, grade: 'B+' },
+            'Chemistry': { ca1: 20, ca2: 22, exam: 32, total: 74, grade: 'B+' },
+            'Biology': { ca1: 25, ca2: 27, exam: 34, total: 86, grade: 'A' },
+          },
+          teacherComment: 'Excellent improvement in Mathematics and Biology. Keep maintaining this performance.',
+          principalComment: 'Outstanding progress. Continue to work hard.',
+          status: 'published',
+        },
+      ],
+      achievements: [
+        {
+          id: '1',
+          title: 'Mathematics Excellence Award',
+          description: 'Awarded for outstanding performance in Mathematics with 89% average',
+          icon: '??',
+          date: '2024-04-15',
+        },
+        {
+          id: '2',
+          title: 'Perfect Attendance',
+          description: 'Achieved 100% attendance for the month of March',
+          icon: '??',
+          date: '2024-03-31',
+        },
+        {
+          id: '3',
+          title: 'Science Fair Participant',
+          description: 'Participated in the annual Science Fair with innovative Physics project',
+          icon: '??',
+          date: '2024-02-20',
+        },
+      ],
+      exams: [
+        {
+          name: 'Third Term Examination',
+          subject: 'Mathematics',
+          date: '2024-05-15',
+          time: '10:00 AM',
+          venue: 'Hall A',
+          topics: ['Algebra', 'Geometry', 'Trigonometry'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Third Term Examination',
+          subject: 'English',
+          date: '2024-05-16',
+          time: '10:00 AM',
+          venue: 'Hall B',
+          topics: ['Literature', 'Grammar', 'Comprehension'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Third Term Examination',
+          subject: 'Physics',
+          date: '2024-05-17',
+          time: '10:00 AM',
+          venue: 'Lab 1',
+          topics: ['Mechanics', 'Electricity', 'Optics'],
+          status: 'upcoming',
+        },
+      ],
+      assignments: [
+        {
+          name: 'Chemistry Lab Report',
+          subject: 'Chemistry',
+          dueDate: '2024-04-20',
+          description: 'Complete lab report on acid-base reactions experiment',
+          status: 'pending',
+        },
+        {
+          name: 'English Literature Essay',
+          subject: 'English',
+          dueDate: '2024-04-18',
+          description: 'Write a 1000-word essay on Shakespeare\'s Macbeth',
+          status: 'submitted',
+        },
+        {
+          name: 'Mathematics Problem Set',
+          subject: 'Mathematics',
+          dueDate: '2024-04-22',
+          description: 'Solve problems 1-20 from chapter 5 on quadratic equations',
+          status: 'pending',
+        },
+      ],
+    },
+    {
+      id: 'STU002',
+      name: 'Bola K.',
+      class: 'JSS3 Art',
+      avatar: 'BK',
+      averageScore: 85,
+      predictedGrade: 'A-',
+      attendance: 98,
+      rank: 3,
+      totalStudents: 38,
+      teacher: 'Mrs. Okafor',
+      teacherEmail: 'okafor@classora.com',
+      teacherPhone: '+234 803 456 7890',
+      subjects: [
+        { name: 'Mathematics', score: 88, grade: 'A', trend: 'up', teacher: 'Mrs. Okafor', improvement: 10, remark: 'Outstanding problem-solving skills' },
+        { name: 'English', score: 85, grade: 'A-', trend: 'up', teacher: 'Mr. Adele', improvement: 6, remark: 'Excellent writing skills' },
+        { name: 'Social Studies', score: 82, grade: 'B+', trend: 'stable', teacher: 'Mr. Musa', improvement: 3, remark: 'Good understanding' },
+        { name: 'Art', score: 90, grade: 'A', trend: 'up', teacher: 'Mrs. Ibrahim', improvement: 12, remark: 'Creative excellence' },
+      ],
+      recentActivities: [
+        { id: '1', activity: 'Scored 90% in Art project', date: '2024-04-14', type: 'score', score: 90 },
+        { id: '2', activity: 'Submitted English essay', date: '2024-04-13', type: 'submission' },
+        { id: '3', activity: 'Perfect attendance this week', date: '2024-04-12', type: 'attendance' },
+      ],
+      upcomingEvents: [
+        { id: '1', title: 'Art Exhibition', date: '2024-04-22', type: 'deadline' },
+        { id: '2', title: 'Mathematics Quiz', date: '2024-04-18', type: 'exam' },
+      ],
+      feeStatus: {
+        term: 'Second Term 2024',
+        amount: 120000,
+        paid: 100000,
+        due: 20000,
+        status: 'partial',
+        dueDate: '2024-04-25',
+      },
+      results: [
+        {
+          id: '3',
+          term: 'First Term',
+          academicYear: '2023/2024',
+          total: 85.2,
+          average: 85.2,
+          grade: 'A-',
+          position: 3,
+          outOf: 38,
+          publishedAt: '2024-01-15',
+          subjectResults: {
+            'Mathematics': { ca1: 26, ca2: 28, exam: 34, total: 88, grade: 'A' },
+            'English': { ca1: 24, ca2: 26, exam: 35, total: 85, grade: 'A-' },
+            'Social Studies': { ca1: 22, ca2: 24, exam: 36, total: 82, grade: 'B+' },
+            'Art': { ca1: 28, ca2: 30, exam: 32, total: 90, grade: 'A' },
+          },
+          teacherComment: 'Bola continues to excel in all subjects. Her artistic skills are particularly outstanding.',
+          principalComment: 'Excellent academic performance. A role model for other students.',
+          status: 'published',
+        },
+        {
+          id: '4',
+          term: 'Second Term',
+          academicYear: '2023/2024',
+          total: 87.8,
+          average: 87.8,
+          grade: 'A',
+          position: 2,
+          outOf: 38,
+          publishedAt: '2024-04-15',
+          subjectResults: {
+            'Mathematics': { ca1: 27, ca2: 29, exam: 36, total: 92, grade: 'A' },
+            'English': { ca1: 25, ca2: 27, exam: 36, total: 88, grade: 'A' },
+            'Social Studies': { ca1: 24, ca2: 26, exam: 38, total: 88, grade: 'A' },
+            'Art': { ca1: 29, ca2: 31, exam: 34, total: 94, grade: 'A' },
+          },
+          teacherComment: 'Outstanding performance across all subjects. Bola is a top student.',
+          principalComment: 'Exceptional academic excellence. Keep up the excellent work.',
+          status: 'published',
+        },
+      ],
+      achievements: [
+        {
+          id: '4',
+          title: 'Art Excellence Award',
+          description: 'Awarded for exceptional artistic talent and creativity',
+          icon: '??',
+          date: '2024-04-15',
+        },
+        {
+          id: '5',
+          title: 'Academic Excellence',
+          description: 'Maintained A grade average throughout the term',
+          icon: '?',
+          date: '2024-04-15',
+        },
+        {
+          id: '6',
+          title: 'Class Representative',
+          description: 'Elected as class representative for leadership qualities',
+          icon: '??',
+          date: '2024-03-01',
+        },
+      ],
+      exams: [
+        {
+          name: 'Third Term Examination',
+          subject: 'Mathematics',
+          date: '2024-05-15',
+          time: '10:00 AM',
+          venue: 'Hall A',
+          topics: ['Advanced Algebra', 'Calculus', 'Statistics'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Third Term Examination',
+          subject: 'English',
+          date: '2024-05-16',
+          time: '10:00 AM',
+          venue: 'Hall B',
+          topics: ['Advanced Literature', 'Creative Writing', 'Grammar'],
+          status: 'upcoming',
+        },
+        {
+          name: 'Art Practical Examination',
+          subject: 'Art',
+          date: '2024-05-18',
+          time: '9:00 AM',
+          venue: 'Art Studio',
+          topics: ['Painting', 'Sculpture', 'Design'],
+          status: 'upcoming',
+        },
+      ],
+      assignments: [
+        {
+          name: 'Art Portfolio Project',
+          subject: 'Art',
+          dueDate: '2024-04-25',
+          description: 'Complete portfolio with 5 original artworks and artist statement',
+          status: 'pending',
+        },
+        {
+          name: 'Mathematics Research Paper',
+          subject: 'Mathematics',
+          dueDate: '2024-04-20',
+          description: 'Write a 1500-word paper on applications of mathematics in real life',
+          status: 'submitted',
+        },
+        {
+          name: 'English Creative Writing',
+          subject: 'English',
+          dueDate: '2024-04-22',
+          description: 'Write a short story of 2000 words on any theme',
+          status: 'pending',
+        },
+      ],
+    },
+  ]);
+
   // Sample messages (empty for new schools)
   const messages: Message[] = [];
 
@@ -554,7 +849,7 @@ export default function ParentDashboard() {
                     <span className="text-white font-bold text-sm">C</span>
                   </div>
                   <span className="text-white font-semibold hidden sm:inline">Classora</span>
-                  <span className="text-white/30 hidden sm:inline">â€¢</span>
+                  <span className="text-white/30 hidden sm:inline">•</span>
                   <span className="text-white/80 text-sm truncate max-w-[150px] sm:max-w-none">{schoolName}</span>
                 </div>
 
@@ -874,7 +1169,7 @@ export default function ParentDashboard() {
                               </span>
                             </div>
                             <p className="text-gray-400 text-xs mt-1">{announcement.content}</p>
-                            <p className="text-gray-500 text-xs mt-1">{announcement.date} â€¢ {announcement.author}</p>
+                            <p className="text-gray-500 text-xs mt-1">{announcement.date} • {announcement.author}</p>
                           </div>
                         </div>
                       </div>
@@ -1015,7 +1310,7 @@ export default function ParentDashboard() {
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-white font-semibold text-lg">{subject.name}</span>
-                                <span className="text-white/50 text-sm">â€¢ {subject.teacher}</span>
+                                <span className="text-white/50 text-sm">• {subject.teacher}</span>
                                 {subject.trend === 'up' && <span className="text-green-400 text-xs flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +{subject.improvement}%</span>}
                                 {subject.trend === 'down' && <span className="text-red-400 text-xs flex items-center gap-1"><TrendingUp className="w-3 h-3 rotate-180" /> {subject.improvement}%</span>}
                               </div>
@@ -1278,7 +1573,7 @@ export default function ParentDashboard() {
                           <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
                             <div>
                               <span className="text-white font-semibold">{message.teacher}</span>
-                              <span className="text-gray-500 text-sm ml-2">â€¢ {message.childName}</span>
+                              <span className="text-gray-500 text-sm ml-2">• {message.childName}</span>
                             </div>
                             <span className="text-gray-500 text-xs">{message.date}</span>
                           </div>
@@ -1374,7 +1669,7 @@ export default function ParentDashboard() {
                           </div>
                           <div>
                             <p className="text-white font-semibold">{payment.childName}</p>
-                            <p className="text-gray-400 text-sm">{payment.method} â€¢ {payment.reference}</p>
+                            <p className="text-gray-400 text-sm">{payment.method} • {payment.reference}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -1499,7 +1794,7 @@ export default function ParentDashboard() {
                 <User className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-white font-bold text-lg">{user.name}</h3>
-              <p className="text-gray-400 text-sm">Parent â€¢ {schoolName}</p>
+              <p className="text-gray-400 text-sm">Parent • {schoolName}</p>
             </div>
             <div className="p-4 space-y-2">
               <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors">
@@ -1562,4 +1857,3 @@ export default function ParentDashboard() {
     </div>
   );
 }
-

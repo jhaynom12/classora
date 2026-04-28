@@ -99,6 +99,9 @@ export default function AdminDashboard() {
   const [fetchedClasses, setFetchedClasses] = useState<ClassData[]>([]);
   const [fetchedUsers, setFetchedUsers] = useState<UserData[]>([]);
   const [fetchedFeeStructures, setFetchedFeeStructures] = useState<FeeStructure[]>([]);
+  const [atRiskStudents, setAtRiskStudents] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [schoolSettings, setSchoolSettings] = useState({
     gradingScale: 'A:70-100,B:50-69,C:0-49',
@@ -162,64 +165,35 @@ export default function AdminDashboard() {
 
     setLoadingStats(true);
     try {
-      // Fetch classes for stats
-      const classesResponse = await fetch(`/api/classes?schoolId=${user.schoolId}`, {
+      // Fetch dashboard data from unified API
+      const response = await fetch('/api/dashboard/admin', {
         headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
       });
-      const classesData = classesResponse.ok ? await classesResponse.json() : [];
 
-      // Fetch users for stats
-      const usersResponse = await fetch(`/api/users?schoolId=${user.schoolId}`, {
-        headers: { ...getAuthHeaders(), 'Cache-Control': 'no-cache' }
-      });
-      const usersData = usersResponse.ok ? await usersResponse.json() : [];
+      if (response.ok) {
+        const dashboardData = await response.json();
 
-      // Calculate stats from API data
-      const totalStudents = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'student').length : 0;
-      const totalTeachers = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'teacher').length : 0;
-      const totalStaff = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'staff').length : 0;
-      const totalParents = Array.isArray(usersData) ? usersData.filter((u: any) => u.role === 'parent').length : 0;
-      const totalClasses = Array.isArray(classesData) ? classesData.length : 0;
+        setFetchedStats({
+          totalStudents: dashboardData.totalStudents,
+          totalTeachers: dashboardData.totalTeachers,
+          totalStaff: 0, // Not included in new API
+          totalParents: dashboardData.totalParents,
+          totalClasses: dashboardData.totalClasses,
+          totalSubjects: 0, // We'll need a subjects API
+          averageAttendance: 0, // We'll need to calculate this
+          averageScore: 0, // We'll need to calculate this
+          revenue: { total: 0, collected: 0, pending: 0 }, // We'll need a payments API
+          activeUsers: dashboardData.totalStudents + dashboardData.totalTeachers + dashboardData.totalParents,
+          systemHealth: 100
+        });
 
-      // Transform classes data
-      const transformedClasses = classesData.map((cls: any) => ({
-        id: cls.id,
-        name: cls.name,
-        section: cls.section,
-        students: cls.enrollments?.length || 0,
-        teacher: cls.teacher?.name || 'Not Assigned',
-        averageScore: 0, // We'll need to calculate this from marks
-        status: cls.isActive ? 'active' : 'inactive'
-      }));
-
-      // Transform users data
-      const transformedUsers = usersData.map((u: any) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        status: u.isActive ? 'active' : 'inactive',
-        joinDate: new Date(u.createdAt).toLocaleDateString(),
-        lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never',
-        avatar: u.name.split(' ').map((n: string) => n[0]).join('')
-      }));
-
-      setFetchedStats({
-        totalStudents,
-        totalTeachers,
-        totalStaff,
-        totalParents,
-        totalClasses,
-        totalSubjects: 0, // We'll need a subjects API
-        averageAttendance: 0, // We'll need to calculate this
-        averageScore: 0, // We'll need to calculate this
-        revenue: { total: 0, collected: 0, pending: 0 }, // We'll need a payments API
-        activeUsers: usersData.filter((u: any) => u.isActive).length,
-        systemHealth: 100
-      });
-
-      setFetchedClasses(transformedClasses);
-      setFetchedUsers(transformedUsers);
+        // Store additional dashboard data
+        setAtRiskStudents(dashboardData.atRiskStudents || []);
+        setRecentActivity(dashboardData.recentActivity || []);
+        setPerformanceData(dashboardData.performanceData || []);
+      } else {
+        console.error('Failed to fetch dashboard data');
+      }
 
     } catch (error) {
       console.error('Error fetching admin stats:', error);

@@ -71,6 +71,8 @@ export default function StudentDashboard() {
   const [mounted, setMounted] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
 
   const subjects: Subject[] = [];
 
@@ -86,6 +88,7 @@ export default function StudentDashboard() {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
       fetchSchoolInfo();
+      fetchDashboardData();
     } else {
       window.location.href = "/";
     }
@@ -119,6 +122,29 @@ export default function StudentDashboard() {
       console.error('Error fetching assignments:', error);
     } finally {
       setLoadingAssignments(false);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    if (!user?.id) return;
+
+    setLoadingDashboard(true);
+    try {
+      const response = await fetch('/api/dashboard/student', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('classora_token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching student dashboard data:', error);
+    } finally {
+      setLoadingDashboard(false);
     }
   };
 
