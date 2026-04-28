@@ -131,6 +131,22 @@ export default function AdminDashboard() {
   });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
+  // Edit user form state
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [editUserForm, setEditUserForm] = useState({
+    name: '',
+    email: '',
+    role: 'student' as 'student' | 'teacher' | 'parent' | 'staff',
+    password: '',
+    studentId: '',
+    staffId: '',
+    classId: '',
+    phone: '',
+    status: 'active' as 'active' | 'inactive'
+  });
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+
   const defaultStats: SchoolStats = {
     totalStudents: 0, totalTeachers: 0, totalStaff: 0, totalParents: 0,
     totalClasses: 0, totalSubjects: 0, averageAttendance: 0, averageScore: 0,
@@ -411,6 +427,75 @@ export default function AdminDashboard() {
       alert('Failed to create user');
     } finally {
       setIsCreatingUser(false);
+    }
+  };
+
+  const handleEditUser = (userData: UserData) => {
+    setEditingUser(userData);
+    setEditUserForm({
+      name: userData.name,
+      email: userData.email,
+      role: (userData.role as any) || 'student',
+      password: '',
+      studentId: '',
+      staffId: '',
+      classId: '',
+      phone: '',
+      status: (userData.status === 'suspended' ? 'inactive' : userData.status) as 'active' | 'inactive'
+    });
+    setShowEditUser(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser || !editUserForm.name.trim() || !editUserForm.email.trim()) {
+      alert('Please fill in required fields (name, email).');
+      return;
+    }
+
+    setIsUpdatingUser(true);
+    try {
+      const updateData: any = {
+        name: editUserForm.name,
+        email: editUserForm.email,
+        role: editUserForm.role,
+        phone: editUserForm.phone || null,
+        isActive: editUserForm.status === 'active'
+      };
+
+      // Add password if provided
+      if (editUserForm.password.trim()) {
+        updateData.password = editUserForm.password;
+      }
+
+      // Add role-specific fields
+      if (editUserForm.role === 'student' && editUserForm.studentId) {
+        updateData.studentId = editUserForm.studentId;
+      }
+      if ((editUserForm.role === 'teacher' || editUserForm.role === 'staff') && editUserForm.staffId) {
+        updateData.staffId = editUserForm.staffId;
+      }
+
+      const response = await fetch(`/api/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowEditUser(false);
+        setEditingUser(null);
+        alert('User updated successfully!');
+        fetchStats();
+      } else {
+        alert(data.error || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Update user error:', error);
+      alert('Failed to update user');
+    } finally {
+      setIsUpdatingUser(false);
     }
   };
 
@@ -839,6 +924,16 @@ export default function AdminDashboard() {
                                   <Eye className="w-4 h-4" />
                                 </a>
                               )}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditUser(userItem);
+                                }}
+                                className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+                                title="Edit User"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
                               <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
                                 <MoreVertical className="w-4 h-4 text-gray-400" />
                               </button>
@@ -1141,6 +1236,117 @@ export default function AdminDashboard() {
               >
                 {isCreatingUser ? 'Creating...' : 'Create User'}
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit User Modal */}
+      <AnimatePresence>
+        {showEditUser && editingUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowEditUser(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl bg-white/10 backdrop-blur-2xl border border-white/20 p-6 max-h-[90vh] overflow-y-auto"
+            >
+              <h3 className="text-xl font-bold text-white mb-4">Edit User</h3>
+              
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={editUserForm.name}
+                onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+              
+              <input 
+                type="email" 
+                placeholder="Email" 
+                value={editUserForm.email}
+                onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+              
+              <input 
+                type="password" 
+                placeholder="New Password (leave empty to keep current)" 
+                value={editUserForm.password}
+                onChange={(e) => setEditUserForm({ ...editUserForm, password: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+
+              <input 
+                type="tel" 
+                placeholder="Phone Number" 
+                value={editUserForm.phone}
+                onChange={(e) => setEditUserForm({ ...editUserForm, phone: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+
+              <select 
+                value={editUserForm.role}
+                onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value as any })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none bg-gray-800"
+              >
+                <option value="student" className="bg-gray-900">Student</option>
+                <option value="teacher" className="bg-gray-900">Teacher</option>
+                <option value="parent" className="bg-gray-900">Parent</option>
+                <option value="staff" className="bg-gray-900">Staff</option>
+              </select>
+
+              <select 
+                value={editUserForm.status}
+                onChange={(e) => setEditUserForm({ ...editUserForm, status: e.target.value as any })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none bg-gray-800"
+              >
+                <option value="active" className="bg-gray-900">Active</option>
+                <option value="inactive" className="bg-gray-900">Inactive</option>
+              </select>
+
+              {editUserForm.role === 'student' && (
+                <input 
+                  type="text" 
+                  placeholder="Student ID" 
+                  value={editUserForm.studentId}
+                  onChange={(e) => setEditUserForm({ ...editUserForm, studentId: e.target.value })}
+                  className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+                />
+              )}
+
+              {(editUserForm.role === 'teacher' || editUserForm.role === 'staff') && (
+                <input 
+                  type="text" 
+                  placeholder="Staff ID" 
+                  value={editUserForm.staffId}
+                  onChange={(e) => setEditUserForm({ ...editUserForm, staffId: e.target.value })}
+                  className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+                />
+              )}
+
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleUpdateUser}
+                  disabled={isUpdatingUser}
+                  className="flex-1 py-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 disabled:opacity-50 transition-colors"
+                >
+                  {isUpdatingUser ? 'Updating...' : 'Update User'}
+                </button>
+                <button 
+                  onClick={() => setShowEditUser(false)}
+                  className="flex-1 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
