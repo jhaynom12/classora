@@ -90,6 +90,8 @@ export default function TeacherDashboard() {
   const [newAssignmentTotalMarks, setNewAssignmentTotalMarks] = useState('100');
   const [newAssignmentInstructions, setNewAssignmentInstructions] = useState('');
   const [creatingAssignment, setCreatingAssignment] = useState(false);
+  const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [showMessages, setShowMessages] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -192,6 +194,25 @@ export default function TeacherDashboard() {
         ]
       });
     }
+  };
+
+  const handleOpenEditAssignmentModal = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    setShowEditAssignmentModal(true);
+  };
+
+  const handleSaveAssignmentEdit = () => {
+    if (!selectedAssignment) return;
+    setAssignments(assignments.map((assignment) =>
+      assignment.id === selectedAssignment.id ? selectedAssignment : assignment
+    ));
+    setShowEditAssignmentModal(false);
+    setSelectedAssignment(null);
+  };
+
+  const handleCloseEditAssignmentModal = () => {
+    setShowEditAssignmentModal(false);
+    setSelectedAssignment(null);
   };
 
   const fetchAssignments = async () => {
@@ -1043,7 +1064,7 @@ export default function TeacherDashboard() {
                         }`}>
                           {assignment.status.toUpperCase()}
                         </span>
-                        <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                        <button onClick={() => handleOpenEditAssignmentModal(assignment)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
                           <Edit className="w-4 h-4 text-gray-400" />
                         </button>
                       </div>
@@ -1192,6 +1213,126 @@ export default function TeacherDashboard() {
                       </button>
                       <button
                         onClick={() => setShowCreateAssignmentModal(false)}
+                        className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-white hover:bg-white/10 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {showEditAssignmentModal && selectedAssignment && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+                onClick={handleCloseEditAssignmentModal}
+              >
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.95 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-2xl rounded-3xl bg-slate-950/95 border border-white/10 p-6 shadow-2xl backdrop-blur-xl"
+                >
+                  <div className="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Edit Assignment</h2>
+                      <p className="text-sm text-gray-400">Update assignment details before saving.</p>
+                    </div>
+                    <button
+                      onClick={handleCloseEditAssignmentModal}
+                      className="rounded-full p-2 bg-white/5 text-gray-300 hover:bg-white/10 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Title</label>
+                      <input
+                        value={selectedAssignment.title}
+                        onChange={(e) => setSelectedAssignment((prev) => prev ? { ...prev, title: e.target.value } : prev)}
+                        placeholder="Enter assignment title"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Class</label>
+                        <select
+                          value={selectedAssignment.class}
+                          onChange={(e) => setSelectedAssignment((prev) => prev ? { ...prev, class: e.target.value } : prev)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        >
+                          {classes.map((classItem) => (
+                            <option key={classItem.id} value={classItem.name}>{classItem.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Subject</label>
+                        <input
+                          value={selectedAssignment.subject}
+                          onChange={(e) => setSelectedAssignment((prev) => prev ? { ...prev, subject: e.target.value } : prev)}
+                          placeholder="Enter subject"
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Due Date</label>
+                        <input
+                          type="date"
+                          value={new Date(selectedAssignment.dueDate).toISOString().split('T')[0]}
+                          onChange={(e) => setSelectedAssignment((prev) => prev ? { ...prev, dueDate: new Date(e.target.value).toLocaleDateString() } : prev)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Total Marks</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={selectedAssignment.totalMarks}
+                          onChange={(e) => setSelectedAssignment((prev) => prev ? { ...prev, totalMarks: Number(e.target.value) } : prev)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Status</label>
+                      <select
+                        value={selectedAssignment.status}
+                        onChange={(e) => setSelectedAssignment((prev) => prev ? { ...prev, status: e.target.value as Assignment['status'] } : prev)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-blue-500"
+                      >
+                        <option value="active">Active</option>
+                        <option value="closed">Closed</option>
+                        <option value="draft">Draft</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      <button
+                        onClick={handleSaveAssignmentEdit}
+                        className="flex-1 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 px-5 py-3 text-white font-semibold hover:shadow-xl transition-all"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={handleCloseEditAssignmentModal}
                         className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-white hover:bg-white/10 transition-colors"
                       >
                         Cancel

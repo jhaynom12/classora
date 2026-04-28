@@ -223,6 +223,36 @@ export default function AdminManagement() {
     if (section === 'students') setStudents(students.filter(s => s.id !== id));
   };
 
+  const handleOpenEditModal = (item: any) => {
+    setSelectedItem({ ...item });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedItem) return;
+
+    if (activeSection === 'classes') {
+      setClasses(classes.map((c) => c.id === selectedItem.id ? { ...c, ...selectedItem } : c));
+    }
+    if (activeSection === 'subjects') {
+      setSubjects(subjects.map((s) => s.id === selectedItem.id ? { ...s, ...selectedItem } : s));
+    }
+    if (activeSection === 'teachers') {
+      setTeachers(teachers.map((t) => t.id === selectedItem.id ? { ...t, ...selectedItem } : t));
+    }
+    if (activeSection === 'students') {
+      setStudents(students.map((s) => s.id === selectedItem.id ? { ...s, ...selectedItem } : s));
+    }
+
+    setShowEditModal(false);
+    setSelectedItem(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedItem(null);
+  };
+
   const handleUpdateGradingRule = (id: string, field: string, value: number) => {
     setGradingRules(gradingRules.map(rule => 
       rule.id === id ? { ...rule, [field]: value } : rule
@@ -361,7 +391,7 @@ export default function AdminManagement() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                          <button onClick={() => handleOpenEditModal(classItem)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
                             <Edit className="w-4 h-4 text-gray-400" />
                           </button>
                           <button onClick={() => handleDelete('classes', classItem.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
@@ -409,7 +439,7 @@ export default function AdminManagement() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-2">
-                            <button className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                            <button onClick={() => handleOpenEditModal(subject)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
                               <Edit className="w-4 h-4 text-gray-400" />
                             </button>
                             <button onClick={() => handleDelete('subjects', subject.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
@@ -457,7 +487,7 @@ export default function AdminManagement() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                          <button onClick={() => handleOpenEditModal(teacher)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
                             <Edit className="w-4 h-4 text-gray-400" />
                           </button>
                           <button onClick={() => handleDelete('teachers', teacher.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
@@ -506,7 +536,7 @@ export default function AdminManagement() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-2">
-                            <button className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                            <button onClick={() => handleOpenEditModal(student)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
                               <Edit className="w-4 h-4 text-gray-400" />
                             </button>
                             <button onClick={() => handleDelete('students', student.id)} className="p-1 rounded-lg hover:bg-red-500/10 transition-colors">
@@ -711,6 +741,97 @@ export default function AdminManagement() {
                   <button onClick={handleAddStudent} className="w-full py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">Enroll Student</button>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showEditModal && selectedItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={handleCloseEditModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl bg-white/10 backdrop-blur-2xl border border-white/20 p-6"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Edit {activeSection.slice(0, -1).charAt(0).toUpperCase() + activeSection.slice(0, -1).slice(1)}</h3>
+                <button onClick={handleCloseEditModal} className="p-1 rounded-lg hover:bg-white/10">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {activeSection === 'classes' && (
+                <div className="space-y-4">
+                  <input type="text" placeholder="Class Name" value={selectedItem.name || ''} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="text" placeholder="Section" value={selectedItem.section || ''} onChange={(e) => setSelectedItem({ ...selectedItem, section: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="text" placeholder="Class Teacher" value={selectedItem.teacher || ''} onChange={(e) => setSelectedItem({ ...selectedItem, teacher: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <select value={selectedItem.status || 'active'} onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
+
+              {activeSection === 'subjects' && (
+                <div className="space-y-4">
+                  <input type="text" placeholder="Subject Name" value={selectedItem.name || ''} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="text" placeholder="Subject Code" value={selectedItem.code || ''} onChange={(e) => setSelectedItem({ ...selectedItem, code: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <select value={selectedItem.classId || ''} onChange={(e) => setSelectedItem({ ...selectedItem, classId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option value="">Select Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                  </select>
+                  <select value={selectedItem.teacherId || ''} onChange={(e) => setSelectedItem({ ...selectedItem, teacherId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option value="">Select Teacher</option>
+                    {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={selectedItem.isElective || false} onChange={(e) => setSelectedItem({ ...selectedItem, isElective: e.target.checked })} className="w-4 h-4" />
+                    <span className="text-gray-300">Elective Subject</span>
+                  </label>
+                </div>
+              )}
+
+              {activeSection === 'teachers' && (
+                <div className="space-y-4">
+                  <input type="text" placeholder="Full Name" value={selectedItem.name || ''} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="email" placeholder="Email Address" value={selectedItem.email || ''} onChange={(e) => setSelectedItem({ ...selectedItem, email: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="tel" placeholder="Phone Number" value={selectedItem.phone || ''} onChange={(e) => setSelectedItem({ ...selectedItem, phone: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="text" placeholder="Subject Specialization" value={selectedItem.subject || ''} onChange={(e) => setSelectedItem({ ...selectedItem, subject: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <select value={selectedItem.status || 'active'} onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
+
+              {activeSection === 'students' && (
+                <div className="space-y-4">
+                  <input type="text" placeholder="Full Name" value={selectedItem.name || ''} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="text" placeholder="Admission Number" value={selectedItem.admissionNo || ''} onChange={(e) => setSelectedItem({ ...selectedItem, admissionNo: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <select value={selectedItem.classId || ''} onChange={(e) => setSelectedItem({ ...selectedItem, classId: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option value="">Select Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                  </select>
+                  <input type="email" placeholder="Parent Email" value={selectedItem.parentEmail || ''} onChange={(e) => setSelectedItem({ ...selectedItem, parentEmail: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <input type="tel" placeholder="Parent Phone" value={selectedItem.parentPhone || ''} onChange={(e) => setSelectedItem({ ...selectedItem, parentPhone: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 outline-none" />
+                  <select value={selectedItem.status || 'active'} onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })} className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="mt-4 flex justify-end gap-3">
+                <button onClick={handleCloseEditModal} className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">Cancel</button>
+                <button onClick={handleSaveEdit} className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-xl transition-all">Save Changes</button>
+              </div>
             </motion.div>
           </motion.div>
         )}
