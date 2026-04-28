@@ -146,6 +146,7 @@ export default function AdminDashboard() {
     status: 'active' as 'active' | 'inactive'
   });
   const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+  const [availableClasses, setAvailableClasses] = useState<any[]>([]);
 
   const defaultStats: SchoolStats = {
     totalStudents: 0, totalTeachers: 0, totalStaff: 0, totalParents: 0,
@@ -443,6 +444,21 @@ export default function AdminDashboard() {
       phone: '',
       status: (userData.status === 'suspended' ? 'inactive' : userData.status) as 'active' | 'inactive'
     });
+
+    // Fetch available classes for the school
+    if (user?.schoolId) {
+      fetch(`/api/classes/list?schoolId=${user.schoolId}`, {
+        headers: getAuthHeaders()
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setAvailableClasses(data);
+          }
+        })
+        .catch(err => console.error('Failed to fetch classes:', err));
+    }
+
     setShowEditUser(true);
   };
 
@@ -473,6 +489,11 @@ export default function AdminDashboard() {
       }
       if ((editUserForm.role === 'teacher' || editUserForm.role === 'staff') && editUserForm.staffId) {
         updateData.staffId = editUserForm.staffId;
+      }
+
+      // Add class assignment for students
+      if (editUserForm.role === 'student' && editUserForm.classId) {
+        updateData.classId = editUserForm.classId;
       }
 
       const response = await fetch(`/api/users/${editingUser.id}`, {
@@ -1313,13 +1334,28 @@ export default function AdminDashboard() {
               </select>
 
               {editUserForm.role === 'student' && (
-                <input 
-                  type="text" 
-                  placeholder="Student ID" 
-                  value={editUserForm.studentId}
-                  onChange={(e) => setEditUserForm({ ...editUserForm, studentId: e.target.value })}
-                  className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
-                />
+                <>
+                  <input 
+                    type="text" 
+                    placeholder="Student ID" 
+                    value={editUserForm.studentId}
+                    onChange={(e) => setEditUserForm({ ...editUserForm, studentId: e.target.value })}
+                    className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+                  />
+
+                  <select 
+                    value={editUserForm.classId}
+                    onChange={(e) => setEditUserForm({ ...editUserForm, classId: e.target.value })}
+                    className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 outline-none bg-gray-800"
+                  >
+                    <option value="">Select Class</option>
+                    {availableClasses.map((cls: any) => (
+                      <option key={cls.id} value={cls.id} className="bg-gray-900">
+                        {cls.name} {cls.section && `(${cls.section})`}
+                      </option>
+                    ))}
+                  </select>
+                </>
               )}
 
               {(editUserForm.role === 'teacher' || editUserForm.role === 'staff') && (

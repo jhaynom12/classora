@@ -23,7 +23,7 @@ function verifyToken(request: Request) {
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -32,7 +32,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
     const data = await request.json();
 
     // Validate required fields
@@ -105,6 +106,29 @@ export async function PUT(
       }
     });
 
+    // Handle class assignment for students
+    if (data.classId && data.role === 'student') {
+      // Check if enrollment already exists
+      const existingEnrollment = await prisma.enrollment.findFirst({
+        where: {
+          studentId: userId,
+          classId: data.classId
+        }
+      });
+
+      if (!existingEnrollment) {
+        // Create new enrollment
+        await prisma.enrollment.create({
+          data: {
+            studentId: userId,
+            classId: data.classId,
+            academicYear: new Date().getFullYear().toString(),
+            rollNumber: data.rollNumber || ''
+          }
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'User updated successfully',
@@ -122,7 +146,7 @@ export async function PUT(
 // DELETE endpoint for deleting users
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -131,7 +155,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -163,10 +188,11 @@ export async function DELETE(
 // GET endpoint for fetching a single user
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
