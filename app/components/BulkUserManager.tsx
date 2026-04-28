@@ -100,6 +100,8 @@ export default function BulkUserManager({ schoolId, onSuccess }: BulkManagerProp
       formData.append('file', file);
       formData.append('type', selectedType);
       formData.append('schoolId', schoolId);
+      formData.append('type', selectedType);
+      formData.append('schoolId', schoolId);
 
       const response = await fetch('/api/bulk/import', {
         method: 'POST',

@@ -126,7 +126,8 @@ export default function AdminDashboard() {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'student' as 'student' | 'teacher' | 'parent' | 'staff'
+    role: 'student' as 'student' | 'teacher' | 'parent' | 'staff',
+    password: ''
   });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
@@ -393,7 +394,7 @@ export default function AdminDashboard() {
       const data = await response.json();
 
       if (response.ok) {
-        setNewUser({ name: '', email: '', role: 'student' });
+        setNewUser({ name: '', email: '', role: 'student', password: '' });
         setShowAddUser(false);
         alert('User created successfully!');
         // Refresh the stats to show the new user
@@ -1110,6 +1111,13 @@ export default function AdminDashboard() {
                 placeholder="Email" 
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
+              />
+              <input 
+                type="password" 
+                placeholder="Password" 
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 className="w-full mb-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:border-blue-500 outline-none" 
               />
               <select 
